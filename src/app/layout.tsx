@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "The personal website of Flick, an experienced software engineer in Colorado, USA",
   alternates: {
     types: {
-      "application/rss+xml": `${process.env.NEXT_PUBLIC_SITE_URL}/feed.xml`,
+      "application/rss+xml": `${process.env.VERCEL_URL}/feed.xml`,
     },
   },
   openGraph: {
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     siteName: "Flick",
     images: [
       {
-        url: `${process.env.NEXT_PUBLIC_SITE_URL}/flick-cp.png`,
+        url: `${process.env.VERCEL_URL}/flick-cp.png`,
         width: 400,
         height: 400,
         alt: "Flick",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     creator: "@0xflick",
     images: [
       {
-        url: `${process.env.NEXT_PUBLIC_SITE_URL}/flick-cp.png`,
+        url: `${process.env.VERCEL_URL}/flick-cp.png`,
         width: 400,
         height: 400,
         alt: "Flick",

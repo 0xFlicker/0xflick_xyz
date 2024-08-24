@@ -14,10 +14,9 @@ export const metadata: Metadata = {
     "The personal website of Flick, an experienced software engineer in Colorado, USA",
   alternates: {
     types: {
-      "application/rss+xml": `${process.env.NEXT_PUBLIC_SITE_URL}/feed.xml`,
+      "application/rss+xml": `${process.env.VERCEL_URL}/feed.xml`,
     },
   },
- 
 };
 
 export default function RootLayout({
