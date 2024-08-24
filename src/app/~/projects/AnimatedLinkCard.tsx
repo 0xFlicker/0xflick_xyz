@@ -4,6 +4,7 @@ import { useSpring, animated } from "react-spring";
 import NextLink from "next/link";
 import Image from "next/image";
 import React from "react";
+import clsx from "clsx";
 
 const AnimatedDiv = animated.div;
 
@@ -65,23 +66,26 @@ export const AnimatedLinkCard: FC<LinkCardProps> = ({
 
   return (
     <AnimatedDiv
-      className="border border-gray-300 rounded-lg overflow-hidden h-full flex flex-col"
+      className="border border-gray-300 rounded-lg overflow-hidden h-full flex flex-col "
       style={springProps}
     >
       <NextLink
         href={to}
-        className="block hover:bg-gray-700 h-full flex flex-col"
+        className="block hover:bg-gray-700 bg-gray-900 h-full flex flex-col"
       >
         <div className="p-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold">{headerTitle}</h2>
         </div>
 
         {CardMediaProps && (
-          <div className="flex-grow flex items-center justify-center">
+          <div className="flex-grow flex items-center justify-center bg-gray-950 ">
             <Image
               src={CardMediaProps.src}
               alt={CardMediaProps.alt}
-              className="object-contain object-center w-full h-full"
+              className={clsx(
+                "object-contain object-center w-full h-full",
+                CardMediaProps.className
+              )}
               width={CardMediaProps.width ?? 400}
               height={CardMediaProps.height ?? 400}
             />

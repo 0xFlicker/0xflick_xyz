@@ -11,7 +11,7 @@ const HomePage = () => {
   const isWebglSupported = useDetectWebgl();
   useEffect(() => {
     if (isWebglSupported === false) {
-      redirect("/home");
+      redirect("/~/about");
     }
   }, [isWebglSupported]);
   const [loading, setLoading] = useState(false);

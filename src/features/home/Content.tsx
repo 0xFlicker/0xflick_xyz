@@ -1,3 +1,4 @@
+"use client";
 import {
   FC,
   useCallback,
@@ -223,7 +224,7 @@ export const Content: FC<{
 
   useEffect(() => {
     if (done) {
-      router.push("/home", "/");
+      router.push("/~/about");
     }
   }, [done, router]);
   const scroll = useScroll();
@@ -403,7 +404,7 @@ export const Content: FC<{
     }
   });
   useEffect(() => {
-    router.prefetch("/home");
+    router.prefetch("/~/about");
   }, [router]);
 
   const onCentered = useCallback(({ width }) => {

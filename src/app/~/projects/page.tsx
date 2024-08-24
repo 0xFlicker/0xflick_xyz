@@ -1,4 +1,4 @@
-import HomeLayout from "@/features/home/Home";
+import HomeLayout from "./Home";
 
 export default function HomePage() {
   return <HomeLayout />;

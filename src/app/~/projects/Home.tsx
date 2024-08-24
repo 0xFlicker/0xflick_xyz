@@ -1,5 +1,6 @@
 import { FC } from "react";
 import { AnimatedLinkCard } from "./AnimatedLinkCard";
+import { Container } from "@/components/Container";
 
 const defaultCardMediaProps = {
   component: "img",
@@ -16,8 +17,8 @@ const HomePage: FC = () => {
   })();
 
   return (
-    <div className="md:container md:mx-auto px-4">
-      <div className="grid lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-4">
+    <Container className="mt-16 sm:mt-32">
+      <div className="grid lg:grid-cols-2 sm:grid-cols-1 gap-4">
         <div className="pl-8 h-full">
           <AnimatedLinkCard
             to="https://www.bitflick.xyz"
@@ -98,7 +99,7 @@ const HomePage: FC = () => {
           />
         </div>
       </div>
-    </div>
+    </Container>
   );
 };
 
