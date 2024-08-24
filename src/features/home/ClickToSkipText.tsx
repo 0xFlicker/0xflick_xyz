@@ -21,7 +21,8 @@ export const ClickToSkipText: FC<
   const { position } = useSpring({
     position: appear
       ? visiblePosition
-      : [visiblePosition[0], offScreenBottom, visiblePosition[2]],
+      : // @ts-ignore
+        [visiblePosition[0], offScreenBottom, visiblePosition[2]],
   });
 
   return (

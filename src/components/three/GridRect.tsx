@@ -23,7 +23,7 @@ const ShaderComponent: FC<{
   speed: number;
 }> = ({ color, opacity, width, glow, spacing, speed }) => {
   const scroll = useScroll();
-  const shaderRef = useRef<ShaderMaterial>();
+  const shaderRef = useRef<ShaderMaterial | null>(null);
   const uniforms = useMemo(() => {
     return {
       color: { value: color },

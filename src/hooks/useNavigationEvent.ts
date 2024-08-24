@@ -14,5 +14,5 @@ export function useNavigationEvent(
     return () => {
       onLeave();
     };
-  }, [pathname, searchParams, onEnter]);
+  }, [pathname, searchParams, onEnter, onLeave]);
 }

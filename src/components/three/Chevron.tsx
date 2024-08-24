@@ -43,6 +43,7 @@ function createChevronShape(
   return shape;
 }
 
+// @ts-ignore
 export const Chevron: FC<
   MeshProps &
     PropsWithChildren<{

@@ -17,7 +17,7 @@ export const FlickImage: FC<AnimatedImageProps> = ({
   alt,
   sizes,
   className,
-  delay
+  delay,
 }) => {
   const [isMounted, setIsMounted] = useState(false);
 
@@ -25,7 +25,10 @@ export const FlickImage: FC<AnimatedImageProps> = ({
     setIsMounted(true);
   }, []);
 
-  const isMdScreen = window.matchMedia("(min-width: 768px)").matches;
+  const isMdScreen =
+    typeof window !== "undefined"
+      ? window.matchMedia("(min-width: 768px)").matches
+      : false;
 
   const springProps = useSpring({
     from: {

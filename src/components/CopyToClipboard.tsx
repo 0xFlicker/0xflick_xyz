@@ -7,11 +7,12 @@ export const CopyToClipboard: FC<{
   children: (handleClick: () => void) => ReactNode;
 }> = ({ children, text }) => {
   const notify = useCallback(() => {
+    // @ts-ignore
     if (navigator.share) {
       toast("Copied to clipboard", {
         className: "bg-blue-500 text-white",
         bodyClassName: "text-sm font-medium",
-      })
+      });
     } else if (navigator.clipboard) {
       toast("Copied to clipboard", {
         className: "bg-blue-500 text-white",

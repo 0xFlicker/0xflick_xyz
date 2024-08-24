@@ -39,7 +39,7 @@ export const FitToWidth: FC<PropsWithChildren<Props>> = forwardRef(
           const frustumWidth = frustumHeight * camera.aspect;
 
           // Calculate margin
-          const margin = marginPercent * frustumWidth;
+          const margin = (marginPercent ?? 0) * frustumWidth;
 
           // Scale the container to fit the frustum width, considering the maxWidth and margin
           let scale = (frustumWidth - margin) / width;

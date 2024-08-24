@@ -53,9 +53,9 @@ const createAnimatableComponent = <TRef extends Object3D>() => {
   > = (props, ref) => {
     const { animationClip, children, scroll } = props;
     const [mixer, setMixer] = useState<AnimationMixer | null>(null);
-    const internalRef = useRef<TRef>(null);
+    const internalRef = useRef<TRef | null>(null);
 
-    useImperativeHandle(ref, () => internalRef.current);
+    useImperativeHandle(ref, () => internalRef.current!);
 
     useEffect(() => {
       if (!internalRef.current) return;

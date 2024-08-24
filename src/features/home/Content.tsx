@@ -60,8 +60,8 @@ export const ClickToSkip: FC<{
   ]);
   const [offScreenBottom, setOffScreenBottom] = useState(0);
 
-  const spotlightRef = useRef<SpotLight>();
-  const clickableRef = useRef<Group>();
+  const spotlightRef = useRef<SpotLight | null>(null);
+  const clickableRef = useRef<Group | null>(null);
 
   const onPointerEnter = useCallback(() => {
     setIsHovered(true);
@@ -269,7 +269,7 @@ export const Content: FC<{
   }, [scrollTo]);
 
   const firstAnimationClip = useCallback((ref: React.RefObject<Object3D>) => {
-    const mixer = new AnimationMixer(ref.current);
+    const mixer = new AnimationMixer(ref.current!);
     const action = mixer.clipAction(
       createTextKeyframeTracks({
         name: "startText",
@@ -283,7 +283,7 @@ export const Content: FC<{
   }, []);
 
   const secondAnimationClip = useCallback((ref: React.RefObject<Object3D>) => {
-    const mixer = new AnimationMixer(ref.current);
+    const mixer = new AnimationMixer(ref.current!);
     const action = mixer.clipAction(
       createTrailingTextKeyframeTracks({
         name: "trailing",
@@ -297,7 +297,7 @@ export const Content: FC<{
   }, []);
 
   const thirdAnimationClip = useCallback((ref: React.RefObject<Object3D>) => {
-    const mixer = new AnimationMixer(ref.current);
+    const mixer = new AnimationMixer(ref.current!);
     const action = mixer.clipAction(
       createTrailingTextKeyframeTracks({
         name: "trailing2",
@@ -311,7 +311,7 @@ export const Content: FC<{
   }, []);
 
   const fourthAnimationClip = useCallback((ref: React.RefObject<Object3D>) => {
-    const mixer = new AnimationMixer(ref.current);
+    const mixer = new AnimationMixer(ref.current!);
     const action = mixer.clipAction(
       createTrailingTextKeyframeTracks({
         name: "trailing3",
@@ -325,7 +325,7 @@ export const Content: FC<{
   }, []);
 
   const fifthAnimationClip = useCallback((ref: React.RefObject<Object3D>) => {
-    const mixer = new AnimationMixer(ref.current);
+    const mixer = new AnimationMixer(ref.current!);
     const action = mixer.clipAction(
       createTrailingTextKeyframeTracks({
         name: "trailing4",
@@ -339,7 +339,7 @@ export const Content: FC<{
   }, []);
 
   const sixthAnimationClip = useCallback((ref: React.RefObject<Object3D>) => {
-    const mixer = new AnimationMixer(ref.current);
+    const mixer = new AnimationMixer(ref.current!);
     const action = mixer.clipAction(
       createTrailingTextKeyframeTracks({
         name: "trailing5",
@@ -353,13 +353,13 @@ export const Content: FC<{
   }, []);
 
   const tunnelAnimationClip = useCallback((ref: React.RefObject<Object3D>) => {
-    const mixer = new AnimationMixer(ref.current);
+    const mixer = new AnimationMixer(ref.current!);
     const startTime = ANIMATION_PART * 15;
     const endTime = ANIMATION_PART * 16;
     const startPosition = TUNNEL_POSITION_DESKTOP;
     // end position is found by moving tunnelRef.current +40 z in local space
     const endPosition = new Vector3(0, 0, 40).applyQuaternion(
-      ref.current.quaternion
+      ref.current!.quaternion
     );
     const positionKF = new VectorKeyframeTrack(
       ".position",
@@ -407,7 +407,7 @@ export const Content: FC<{
     router.prefetch("/~/about");
   }, [router]);
 
-  const onCentered = useCallback(({ width }) => {
+  const onCentered = useCallback(({ width }: { width: number }) => {
     setSize(width);
   }, []);
   const spacing = useMemo(() => [0.075, 0.25] as const, []);
