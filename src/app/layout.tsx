@@ -7,8 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: {
     template: "%s - Flick",
-    default:
-      "Building the future of the web",
+    default: "Building the future of the web",
   },
   description:
     "The personal website of Flick, an experienced software engineer in Colorado, USA",
@@ -16,6 +15,34 @@ export const metadata: Metadata = {
     types: {
       "application/rss+xml": `${process.env.NEXT_PUBLIC_SITE_URL}/feed.xml`,
     },
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "Flick",
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_SITE_URL}/flick-cp.png`,
+        width: 400,
+        height: 400,
+        alt: "Flick",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    creator: "@0xflick",
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_SITE_URL}/flick-cp.png`,
+        width: 400,
+        height: 400,
+        alt: "Flick",
+      },
+    ],
+    description:
+      "The personal website of Flick, an experienced software engineer in Colorado, USA",
+    title: "Building the future of the web",
   },
 };
 

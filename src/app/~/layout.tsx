@@ -1,5 +1,5 @@
 import { type Metadata } from "next";
-
+import flick from "@/images/nfts/flick-cp.png";
 import { Providers } from "@/app/providers";
 import { Layout } from "@/components/Layout";
 
@@ -7,17 +7,17 @@ import "@/styles/tailwind.css";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s - Spencer Sharp",
-    default:
-      "Spencer Sharp - Software designer, founder, and amateur astronaut",
+    template: "%s - Flick",
+    default: "Building the future of the web",
   },
   description:
-    "I’m Spencer, a software designer and entrepreneur based in New York City. I’m the founder and CEO of Planetaria, where we develop technologies that empower regular people to explore space on their own terms.",
+    "The personal website of Flick, an experienced software engineer in Colorado, USA",
   alternates: {
     types: {
       "application/rss+xml": `${process.env.NEXT_PUBLIC_SITE_URL}/feed.xml`,
     },
   },
+ 
 };
 
 export default function RootLayout({
