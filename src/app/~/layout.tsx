@@ -1,5 +1,4 @@
 import { type Metadata } from "next";
-import flick from "@/images/nfts/flick-cp.png";
 import { Providers } from "@/app/providers";
 import { Layout } from "@/components/Layout";
 
