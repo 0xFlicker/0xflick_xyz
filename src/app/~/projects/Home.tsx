@@ -21,6 +21,21 @@ const HomePage: FC = () => {
       <div className="grid lg:grid-cols-2 sm:grid-cols-1 gap-4">
         <div className="pl-8 h-full">
           <AnimatedLinkCard
+            to="https://quote.flick.ing"
+            headerTitle="Make it a quote"
+            CardMediaProps={{
+              ...defaultCardMediaProps,
+              src: "/makeitaquote.png",
+              alt: "Make it a quote",
+              width: 400,
+              height: 400,
+            }}
+            delay={delayGenerator()}
+            content="Make it a quote implemented as a Farcaster frame"
+          />
+        </div>
+        <div className="pl-8 h-full">
+          <AnimatedLinkCard
             to="https://www.bitflick.xyz"
             headerTitle="Bitflick"
             CardMediaProps={{
@@ -65,7 +80,7 @@ const HomePage: FC = () => {
         </div>
         <div className="pl-8">
           <AnimatedLinkCard
-            to="/gas"
+            to="https://0xflick.xyz/gas"
             headerTitle="On Chain Gas"
             CardMediaProps={{
               ...defaultCardMediaProps,
@@ -80,7 +95,7 @@ const HomePage: FC = () => {
         </div>
         <div className="pl-8">
           <AnimatedLinkCard
-            to="/check"
+            to="https://0xflick.xyz/check"
             headerTitle="On Chain Check Gas"
             CardMediaProps={{
               ...defaultCardMediaProps,
