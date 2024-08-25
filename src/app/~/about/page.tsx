@@ -65,7 +65,7 @@ export default function About() {
               sizes="(min-width: 1024px) 32rem, 20rem"
               className="aspect-square rounded-2xl bg-zinc-100 object-cover dark:bg-zinc-800"
             />
-          </div>  
+          </div>
         </div>
         <div className="lg:order-first lg:row-span-2">
           <h1 className="hidden lg:block text-4xl font-bold tracking-tight text-zinc-800 sm:text-5xl dark:text-zinc-100 border border-gray-300 rounded-lg p-4">
@@ -77,9 +77,9 @@ export default function About() {
           <div className="mt-6 space-y-7 text-base text-zinc-600 dark:text-zinc-400  mb-16 border border-gray-300 rounded-lg p-4">
             <p>
               Flick started programming at age 8 on an Apple IIe and never
-              stopped. By highschool, they were building custom BBS (bulletin
-              Board Systems), writing neural networks, self-publishing games and
-              apps, joining the demo scene and winning awards for their work.
+              stopped. By highschool, they were building custom bulletin board
+              systems, writing neural networks, self-publishing games and apps,
+              joining the demo scene and winning awards for their work.
             </p>
             <p>
               Since Flick already knew how to program leaving highschool, they
@@ -110,7 +110,7 @@ export default function About() {
           </div>
         </div>
         <div className="lg:pl-20">
-          <ul role="list" className="border border-gray-300 rounded-lg p-4" >
+          <ul role="list" className="border border-gray-300 rounded-lg p-4">
             <SocialLink href="https://x.com/0xflick" icon={XIcon}>
               Follow on X
             </SocialLink>
