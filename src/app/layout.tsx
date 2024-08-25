@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.OG_URL!),
   title: {
-    template: "%s - Flick",
+    template: "Flick - %s",
     default: "Building the future of the web",
   },
   description:

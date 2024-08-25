@@ -1,15 +1,18 @@
 import { useId } from "react";
 
 interface SectionProps {
+  id?: string;
   title: React.ReactNode;
   children: React.ReactNode;
 }
 
-export function Section({ title, children }: SectionProps) {
-  let id = useId();
+export function Section({ id, title, children }: SectionProps) {
+  const newId = useId();
+  id = id || newId;
 
   return (
     <section
+      id={id}
       aria-labelledby={id}
       className="md:border-l md:border-zinc-100 md:pl-6 md:dark:border-zinc-700/40"
     >
