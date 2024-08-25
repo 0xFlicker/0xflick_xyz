@@ -122,8 +122,8 @@ export default function Resume() {
           </Tool>
           <Tool title="Operations Specialist">
             Creating, managing, upgrading, and debugging the infrastructure that
-            powers the company's products. Primary on-call rotation for core
-            website issues.
+            powers the company&apos;s products. Primary on-call rotation for
+            core website issues.
           </Tool>
           <Tool title="Technologies Used">
             Next, React, GraphQL, Typescript, Node, Go, AWS, Docker, Kubernetes,
