@@ -2,8 +2,6 @@ import { type Metadata } from "next";
 import { Providers } from "@/app/providers";
 import { Layout } from "@/components/Layout";
 
-import "@/styles/tailwind.css";
-
 export const metadata: Metadata = {
   title: {
     template: "%s - Flick",
@@ -13,7 +11,7 @@ export const metadata: Metadata = {
     "The personal website of Flick, an experienced software engineer in Colorado, USA",
   alternates: {
     types: {
-      "application/rss+xml": `${process.env.OG_URL}/feed.xml`,
+      "application/rss+xml": `/feed.xml`,
     },
   },
 };

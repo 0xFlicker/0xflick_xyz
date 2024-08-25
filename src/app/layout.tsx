@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
+
+import "@/styles/tailwind.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.OG_URL!),
   title: {
     template: "%s - Flick",
     default: "Building the future of the web",
@@ -13,7 +15,7 @@ export const metadata: Metadata = {
     "The personal website of Flick, an experienced software engineer in Colorado, USA",
   alternates: {
     types: {
-      "application/rss+xml": `${process.env.OG_URL}/feed.xml`,
+      "application/rss+xml": `/feed.xml`,
     },
   },
   openGraph: {
@@ -22,7 +24,7 @@ export const metadata: Metadata = {
     siteName: "Flick",
     images: [
       {
-        url: `${process.env.OG_URL}/flick-cp.png`,
+        url: `/flick-cp.png`,
         width: 400,
         height: 400,
         alt: "Flick",
@@ -34,7 +36,7 @@ export const metadata: Metadata = {
     creator: "@0xflick",
     images: [
       {
-        url: `${process.env.OG_URL}/flick-cp.png`,
+        url: `/flick-cp.png`,
         width: 400,
         height: 400,
         alt: "Flick",
