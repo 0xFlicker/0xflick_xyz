@@ -9,6 +9,7 @@ import {
   FarcasterIcon,
   LinkedInIcon,
   XIcon,
+  TelegramIcon,
 } from "@/components/SocialIcons";
 import portraitImage from "@/images/nfts/flick-cp.png";
 import { FlickImage } from "./FlickImage";
@@ -29,6 +30,8 @@ function SocialLink({
       <Link
         href={href}
         className="group flex text-sm font-medium text-zinc-800 transition hover:text-teal-500 dark:text-zinc-200 dark:hover:text-teal-500"
+        target="_blank"
+        rel="noopener noreferrer"
       >
         <Icon className="h-6 w-6 flex-none fill-zinc-500 transition group-hover:fill-teal-500" />
         <span className="ml-4">{children}</span>
@@ -120,6 +123,13 @@ export default function About() {
               className="mt-4"
             >
               Follow on Farcaster
+            </SocialLink>
+            <SocialLink
+              href="https://t.me/flick_the_dev"
+              icon={TelegramIcon}
+              className="mt-4"
+            >
+              Connect on Telegram
             </SocialLink>
             <SocialLink
               href="https://github.com/0xflicker"
