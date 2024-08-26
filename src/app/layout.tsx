@@ -13,11 +13,6 @@ export const metadata: Metadata = {
   },
   description:
     "The personal website of Flick, an experienced software engineer in Colorado, USA",
-  alternates: {
-    types: {
-      "application/rss+xml": `/feed.xml`,
-    },
-  },
   openGraph: {
     type: "website",
     locale: "en_US",

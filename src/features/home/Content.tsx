@@ -266,7 +266,8 @@ export const Content: FC<{
       top: 1,
       behavior: "smooth",
     });
-  }, [scrollTo]);
+    router.push("/~/about");
+  }, [scrollTo, router]);
 
   const firstAnimationClip = useCallback((ref: React.RefObject<Object3D>) => {
     const mixer = new AnimationMixer(ref.current!);

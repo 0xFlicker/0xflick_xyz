@@ -22,25 +22,26 @@ function useScrollInner({
   isSwipeOnly: boolean;
   pages: number;
 }) {
+  // const isSwipeOnly = false;
   if (!isSwipeOnly) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const threeScroll = useDreiScroll();
     function scrollTo(scrollOptions: ScrollToOptions) {
       // convert scrollOptions.top from 0-1 to 0-threeScroll.el.clientHeight
       scrollOptions.top = (scrollOptions.top ?? 0) * window.innerHeight * pages;
-      threeScroll.el.scrollTo(scrollOptions);
+      threeScroll?.el.scrollTo(scrollOptions);
     }
     // eslint-disable-next-line react-hooks/rules-of-hooks
     return useMemo(
       () => ({
         isSwipeOnly,
         get offset() {
-          return threeScroll.offset;
+          return threeScroll?.offset ?? 0;
         },
         pages,
         scrollTo,
       }),
-      [isSwipeOnly, pages, scrollTo, threeScroll.offset]
+      [isSwipeOnly, pages, scrollTo, threeScroll?.offset]
     );
   }
   // eslint-disable-next-line react-hooks/rules-of-hooks

@@ -9,12 +9,17 @@ export const MobileThreeCanvas: FC<{}> = () => {
   const [page, setPage] = useState(0);
   const handlers = useSwipeable({
     onSwipedUp: () => {
+      console.log("swiped up");
       setPage((prev) => Math.min(prev + 1, 6));
     },
     onSwipedDown: () => {
+      console.log("swiped down");
       setPage((prev) => Math.max(prev - 1, 0));
     },
-    ...(page === 0 ? {} : { preventDefaultTouchmoveEvent: true }),
+    touchEventOptions: {
+      passive: false,
+    },
+    // ...(page === 0 ? {} : { preventDefaultTouchmoveEvent: true }),
   });
   return (
     <Canvas
