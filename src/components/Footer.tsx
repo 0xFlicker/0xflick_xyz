@@ -12,7 +12,7 @@ function NavLink({
   return (
     <Link
       href={href}
-      className="transition hover:text-teal-500 dark:hover:text-teal-400"
+      className="transition hover:text-brand-dark dark:hover:text-brand-light-400"
     >
       {children}
     </Link>
@@ -31,7 +31,7 @@ export function Footer() {
                 <NavLink href="/~/projects">Projects</NavLink>
                 <NavLink href="/~/cv">Resume</NavLink>
               </div>
-              <p className="text-sm text-zinc-400 dark:text-zinc-500">
+              <p className="text-sm text-zinc-800 dark:text-zinc-200">
                 &copy; {new Date().getFullYear()} flick. All rights reserved.
               </p>
             </div>

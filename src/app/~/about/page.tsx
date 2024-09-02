@@ -27,11 +27,11 @@ function SocialLink({
     <li className={clsx(className, "flex")}>
       <Link
         href={href}
-        className="group flex text-sm font-medium text-zinc-800 transition hover:text-teal-500 dark:text-zinc-200 dark:hover:text-teal-500"
+        className="group flex text-sm font-medium text-zinc-800 transition hover:text-brand-dark dark:text-zinc-200 dark:hover:text-brand-light-400"
         target="_blank"
         rel="noopener noreferrer"
       >
-        <Icon className="h-6 w-6 flex-none fill-zinc-500 transition group-hover:fill-teal-500" />
+        <Icon className="h-6 w-6 flex-none fill-zinc-500 transition group-hover:fill-brand-dark dark:group-hover:fill-brand-light-400" />
         <span className="ml-4">{children}</span>
       </Link>
     </li>
@@ -69,13 +69,13 @@ export default function About() {
           </div>
         </div>
         <div className="lg:order-first lg:row-span-2">
-          <h1 className="hidden lg:block text-4xl font-bold tracking-tight text-zinc-800 sm:text-5xl dark:text-zinc-100 border border-gray-300 rounded-lg p-4">
+          <h1 className="hidden lg:block text-4xl font-bold tracking-tight text-zinc-800 sm:text-5xl dark:text-zinc-100 border border-brand-dark dark:border-brand-light rounded-lg p-4">
             Flick builds the future of the web
           </h1>
-          <h1 className="block lg:hidden text-4xl font-bold tracking-tight text-zinc-800 sm:text-5xl dark:text-zinc-100 border border-gray-300 rounded-lg p-4">
+          <h1 className="block lg:hidden text-4xl font-bold tracking-tight text-zinc-800 sm:text-5xl dark:text-zinc-100 border border-brand-dark dark:border-brand-light rounded-lg p-4">
             Flick builds the future
           </h1>
-          <div className="mt-6 space-y-7 text-base text-zinc-600 dark:text-zinc-400  mb-16 border border-gray-300 rounded-lg p-4">
+          <div className="mt-6 space-y-7 text-base text-zinc-600 dark:text-zinc-400  mb-16 border border-brand-dark dark:border-brand-light rounded-lg p-4">
             <p>
               Flick started programming at age 8 on an Apple IIe and never
               stopped. By highschool, they were building custom bulletin board
@@ -111,7 +111,10 @@ export default function About() {
           </div>
         </div>
         <div className="lg:pl-20">
-          <ul role="list" className="border border-gray-300 rounded-lg p-4">
+          <ul
+            role="list"
+            className="border border-brand-dark dark:border-brand-light rounded-lg p-4"
+          >
             <SocialLink href="https://x.com/0xflick" icon={XIcon}>
               Follow on X
             </SocialLink>
@@ -139,7 +142,7 @@ export default function About() {
             <SocialLink
               href="mailto:me@0xflick.xyz"
               icon={MailIcon}
-              className="mt-8 border-t border-zinc-100 pt-8 dark:border-zinc-700/40"
+              className="mt-8 border-t border-brand-light pt-8 dark:brand-dark"
             >
               me@0xflick.xyz
             </SocialLink>

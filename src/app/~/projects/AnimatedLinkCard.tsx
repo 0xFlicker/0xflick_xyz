@@ -66,12 +66,12 @@ export const AnimatedLinkCard: FC<LinkCardProps> = ({
 
   return (
     <AnimatedDiv
-      className="border border-gray-300 rounded-lg overflow-hidden h-full flex flex-col "
+      className="border border-brand-light dark:border-brand-dark hover:shadow-lg rounded-lg overflow-hidden h-full flex flex-col "
       style={springProps}
     >
       <NextLink
         href={to}
-        className="block hover:bg-gray-700 bg-gray-900 h-full flex flex-col"
+        className="transition block hover:border-brand-dark dark:border-brand-light hover:text-brand-dark dark:hover:text-brand-light-400  h-full flex flex-col"
       >
         <div className="p-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold">{headerTitle}</h2>
