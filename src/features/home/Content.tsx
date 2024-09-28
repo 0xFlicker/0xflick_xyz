@@ -436,8 +436,8 @@ export const Content: FC<{
           color={GRID_COLOR}
           scale={scale}
           opacity={1}
-          glow={5}
-          width={0.5}
+          glow={1.5}
+          width={0.25}
           spacing={spacing}
           speed={0.0}
         />
@@ -453,7 +453,7 @@ export const Content: FC<{
       <ScrollAnimatable animationClip={secondAnimationClip} scroll={scroll}>
         <FitToWidth marginPercent={MARGIN_PERCENT} onCentered={onCentered}>
           <Orbitron>
-            0xflick
+            flick
             <meshNormalMaterial transparent opacity={0} />
           </Orbitron>
         </FitToWidth>
@@ -469,7 +469,7 @@ export const Content: FC<{
       <ScrollAnimatable animationClip={fourthAnimationClip} scroll={scroll}>
         <FitToWidth marginPercent={MARGIN_PERCENT}>
           <Orbitron>
-            nfts
+            ordinals
             <meshNormalMaterial attach="material" transparent opacity={0} />
           </Orbitron>
         </FitToWidth>
@@ -485,7 +485,7 @@ export const Content: FC<{
       <ScrollAnimatable animationClip={sixthAnimationClip} scroll={scroll}>
         <FitToWidth marginPercent={MARGIN_PERCENT}>
           <Orbitron>
-            websites
+            cloud ops
             <meshNormalMaterial attach="material" transparent opacity={0} />
           </Orbitron>
         </FitToWidth>

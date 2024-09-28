@@ -6,8 +6,8 @@ export const GridMaterial = shaderMaterial(
   {
     color: new Color(0x000000),
     opacity: 1,
-    width: 1,
-    glow: 1,
+    width: 0.125,
+    glow: 0.05,
     spacing: 1,
     offsetX: 0,
     offsetY: 0,
