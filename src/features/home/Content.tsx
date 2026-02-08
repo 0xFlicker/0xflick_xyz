@@ -461,7 +461,7 @@ export const Content: FC<{
       <ScrollAnimatable animationClip={thirdAnimationClip} scroll={scroll}>
         <FitToWidth marginPercent={MARGIN_PERCENT}>
           <Orbitron>
-            crypto
+            AI
             <meshNormalMaterial attach="material" transparent opacity={0} />
           </Orbitron>
         </FitToWidth>
@@ -469,7 +469,7 @@ export const Content: FC<{
       <ScrollAnimatable animationClip={fourthAnimationClip} scroll={scroll}>
         <FitToWidth marginPercent={MARGIN_PERCENT}>
           <Orbitron>
-            ordinals
+            Crypto
             <meshNormalMaterial attach="material" transparent opacity={0} />
           </Orbitron>
         </FitToWidth>
@@ -477,7 +477,7 @@ export const Content: FC<{
       <ScrollAnimatable animationClip={fifthAnimationClip} scroll={scroll}>
         <FitToWidth marginPercent={MARGIN_PERCENT}>
           <Orbitron>
-            {"    smart\ncontracts"}
+            Automations
             <meshNormalMaterial attach="material" transparent opacity={0} />
           </Orbitron>
         </FitToWidth>
@@ -485,7 +485,7 @@ export const Content: FC<{
       <ScrollAnimatable animationClip={sixthAnimationClip} scroll={scroll}>
         <FitToWidth marginPercent={MARGIN_PERCENT}>
           <Orbitron>
-            cloud ops
+            Cloud Ops
             <meshNormalMaterial attach="material" transparent opacity={0} />
           </Orbitron>
         </FitToWidth>
