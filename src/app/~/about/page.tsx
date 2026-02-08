@@ -2,6 +2,7 @@ import { type Metadata } from "next";
 import Link from "next/link";
 import clsx from "clsx";
 
+import { Button } from "@/components/Button";
 import { Container } from "@/components/Container";
 import {
   GitHubIcon,
@@ -69,13 +70,47 @@ export default function About() {
           </div>
         </div>
         <div className="lg:order-first lg:row-span-2">
-          <h1 className="hidden lg:block text-4xl font-bold tracking-tight text-zinc-800 sm:text-5xl dark:text-zinc-100 border border-brand-dark dark:border-brand-light rounded-lg p-4">
-            Flick builds the future of the web
-          </h1>
-          <h1 className="block lg:hidden text-4xl font-bold tracking-tight text-zinc-800 sm:text-5xl dark:text-zinc-100 border border-brand-dark dark:border-brand-light rounded-lg p-4">
-            Flick builds the future
-          </h1>
-          <div className="mt-6 space-y-7 text-base text-zinc-600 dark:text-zinc-400  mb-16 border border-brand-dark dark:border-brand-light rounded-lg p-4">
+          <div className="border border-brand-dark dark:border-brand-light rounded-lg p-4">
+            <h1 className="text-4xl font-bold tracking-tight text-zinc-800 sm:text-5xl dark:text-zinc-100">
+              Principal Architect &amp; Engineering Leader — AI systems,
+              platforms, and revenue-critical infrastructure
+            </h1>
+            <p className="mt-6 text-base text-zinc-600 dark:text-zinc-400">
+              I build and scale high-leverage software systems: developer
+              platforms, performance &amp; reliability programs, and product
+              infrastructure that ties directly to business outcomes. Lately:
+              applied AI integrations, automation, and tooling that helps teams
+              ship faster with higher quality.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-4">
+              <Button
+                href="https://calendly.com/me-0xflick/30min"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Book a 30-minute chat
+              </Button>
+              <Button variant="secondary" href="/~/projects">
+                See my work
+              </Button>
+            </div>
+            <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
+              Open to Staff+ / Principal / Head of Engineering / CTO-track roles
+              (see{" "}
+              <Link
+                href="/connect"
+                className="font-medium text-zinc-700 transition hover:text-brand-dark dark:text-zinc-200 dark:hover:text-brand-light-400"
+              >
+                Connect
+              </Link>{" "}
+              for details).
+            </p>
+            <p className="mt-4 text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Next.js • TypeScript • Platform/DevEx • Observability •
+              Ads/monetization systems
+            </p>
+          </div>
+          <div className="mt-6 space-y-7 text-base text-zinc-600 dark:text-zinc-400 mb-16 border border-brand-dark dark:border-brand-light rounded-lg p-4">
             <p>
               Flick started programming at age 8 on an Apple IIe and never
               stopped. By highschool, they were building custom bulletin board
