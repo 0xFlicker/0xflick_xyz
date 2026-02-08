@@ -112,37 +112,41 @@ export default function About() {
           </div>
           <div className="mt-6 space-y-7 text-base text-zinc-600 dark:text-zinc-400 mb-16 border border-brand-dark dark:border-brand-light rounded-lg p-4">
             <p>
-              Flick started programming at age 8 on an Apple IIe and never
-              stopped. By highschool, they were building custom bulletin board
-              systems, writing neural networks, self-publishing games and apps,
-              joining the demo scene and winning awards for their work.
+              I am a principal architect and engineering leader focused on
+              platforms, product systems, and revenue-critical infrastructure.
+              I build the systems that turn strategy into shipped outcomes and
+              make teams faster without sacrificing reliability. My current
+              focus is applied AI that delivers measurable gains in real
+              products.
             </p>
             <p>
-              Since Flick already knew how to program leaving highschool, they
-              decided to study computer engineering to learn how computers
-              worked. While receiving a Bachelor of Science in Computer
-              Engineering, joining IEEE leadership, the robotics team building
-              autonomous fire-fighting robots, and learning how electricity,
-              transistors, and silicon manufacturing worked.
+              I have been building systems end-to-end since the early days,
+              from low-level computing to modern product infrastructure. That
+              throughline shows up in how I approach architecture: start with
+              the business goal, then design for durability and scale.
             </p>
             <p>
-              Professionally Flick has built and maintained automated testing
-              tools, published SDKs and library, developer tools, embedded
-              systems, native mobile games and applications, consumer multimedia
-              websites, online image editing, leaderboards, machine learning
-              tagging, training, deployment and usage, backend services, seo,
-              analytics, visualization, security, crypto, cloud, serverless, and
-              more.
+              I have owned cross-functional work across product, infra, dev
+              velocity, and reliability. My experience spans startups, growth
+              teams, and large platforms where the systems I shipped were
+              directly tied to revenue, retention, and trust.
             </p>
             <p>
-              Flick has been active in crypto since the early days of Bitcoin
-              ASIC mining, having run a mining operation and a f2pool mining
-              pool for many years. Flick has also built open source libraries
-              and tools for profit switching mining, mining pool visualization,
-              utxo transaction management and logging, nfts, ordinals, tokens,
-              dapps, integrations, flashloans, sniping, and more.
+              On AI, I focus on execution over research: practical integrations,
+              automation, and internal tooling that help teams ship better
+              software. Think applied AI for real workflows, not demos.
             </p>
-            <p>Today, Flick is looking to build the future of the web,</p>
+            <p>
+              I have deep crypto and cryptography experience rooted in security,
+              distributed systems, and open source. That work sharpened how I
+              think about trust, adversarial environments, and large-scale
+              production systems.
+            </p>
+            <p>
+              Next, I want to partner with teams building platform leverage and
+              AI-enabled products where execution matters: faster delivery,
+              stronger reliability, and clear business impact.
+            </p>
           </div>
         </div>
         <div className="lg:pl-20">
