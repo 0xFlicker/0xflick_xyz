@@ -88,6 +88,7 @@ export const AnimatedLinkCard: FC<LinkCardProps> = ({
               )}
               width={CardMediaProps.width ?? 400}
               height={CardMediaProps.height ?? 400}
+              unoptimized={CardMediaProps.src.endsWith(".gif")}
             />
           </div>
         )}
