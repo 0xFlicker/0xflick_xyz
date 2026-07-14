@@ -121,6 +121,15 @@ export default function ProjectsPage() {
                   ]}
                 />
               </div>
+              <div className="mt-10 flex flex-wrap gap-x-8 gap-y-4">
+                <ArrowLink href="https://thehouse.game">Live product</ArrowLink>
+                <ArrowLink href="https://github.com/0xFlicker/influence-game">
+                  Source repository
+                </ArrowLink>
+                <ArrowLink href="https://github.com/0xFlicker/influence-game#architecture">
+                  Architecture notes
+                </ArrowLink>
+              </div>
             </div>
           </div>
         </article>
@@ -236,6 +245,15 @@ export default function ProjectsPage() {
                 />
               </div>
               <div className="mt-10 flex flex-wrap gap-x-8 gap-y-4">
+                <ArrowLink href="https://github.com/flick-ing/inscriptions">
+                  Inscriptions library
+                </ArrowLink>
+                <ArrowLink href="https://github.com/fame-lady-society/fame-contracts">
+                  FAME contracts
+                </ArrowLink>
+                <ArrowLink href="https://github.com/0xFlicker/onchaingas">
+                  OnChainGas experiment
+                </ArrowLink>
                 <ArrowLink href="https://fameladysociety.com">
                   Fame Lady Society
                 </ArrowLink>
