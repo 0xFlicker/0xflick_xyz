@@ -1,60 +1,33 @@
-"use client";
-import { FC, use, useEffect, useState } from "react";
-import { useSpring, animated } from "@react-spring/web";
 import Image from "next/image";
 import type { StaticImport } from "next/dist/shared/lib/get-img-props";
+import clsx from "clsx";
 
-interface AnimatedImageProps {
+interface FlickImageProps {
   src: string | StaticImport;
   alt: string;
   sizes: string;
   className?: string;
-  delay?: number;
 }
 
-export const FlickImage: FC<AnimatedImageProps> = ({
+export function FlickImage({
   src,
   alt,
   sizes,
   className,
-  delay,
-}) => {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const isMdScreen =
-    typeof window !== "undefined"
-      ? window.matchMedia("(min-width: 768px)").matches
-      : false;
-
-  const springProps = useSpring({
-    from: {
-      transform: `${
-        isMdScreen ? "translateX(200%)" : "translateX(400%)"
-      } rotate(0deg)`,
-    },
-    to: async (next) => {
-      if (isMounted) {
-        await next({ transform: "translateX(0%) rotate(0deg)" });
-        await next({ transform: "translateX(0%) rotate(3deg)" });
-      }
-    },
-    delay,
-    config: { tension: 200, friction: 15 },
-  });
+}: FlickImageProps) {
   return (
-    <animated.div style={springProps} className="lg:pl-20">
+    <div className="lg:pl-8">
       <div className="max-w-xs px-2.5 lg:max-w-none">
         <Image
           src={src}
           alt={alt}
           sizes={sizes}
-          className={`aspect-square rounded-2xl bg-zinc-100 object-cover dark:bg-zinc-800 ${className}`}
+          className={clsx(
+            "aspect-square rounded-2xl bg-zinc-100 object-cover dark:bg-zinc-800",
+            className
+          )}
         />
       </div>
-    </animated.div>
+    </div>
   );
-};
+}

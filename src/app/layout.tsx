@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
 import "@/styles/tailwind.css";
+import { siteDescription, siteTitle } from "@/lib/site";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -9,10 +10,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.OG_URL!),
   title: {
     template: "Flick - %s",
-    default: "Building the future of the web",
+    default: siteTitle,
   },
-  description:
-    "The personal website of Flick, an experienced software engineer in Colorado, USA",
+  description: siteDescription,
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -25,6 +25,7 @@ export const metadata: Metadata = {
         alt: "Flick",
       },
     ],
+    description: siteDescription,
   },
   twitter: {
     card: "summary_large_image",
@@ -37,9 +38,8 @@ export const metadata: Metadata = {
         alt: "Flick",
       },
     ],
-    description:
-      "The personal website of Flick, an experienced software engineer in Colorado, USA",
-    title: "Building the future of the web",
+    description: siteDescription,
+    title: siteTitle,
   },
 };
 
@@ -49,8 +49,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html
+      lang="en"
+      className="h-full antialiased"
+      suppressHydrationWarning
+    >
+      <body
+        className={`${inter.className} flex min-h-full bg-zinc-50 dark:bg-black`}
+      >
+        {children}
+      </body>
     </html>
   );
 }
