@@ -18,10 +18,10 @@ export default function ConnectPage() {
           Let’s talk
         </h1>
         <p className="mt-6 text-base text-zinc-600 dark:text-zinc-400">
-          If you are hiring or partnering with a senior engineering leader who
-          can connect product outcomes to platform execution, this is the right
-          place to start. I focus on pragmatic delivery, scalable systems, and
-          the teams that make them sustainable.
+          If you are hiring a Principal or Staff+ engineer who can connect
+          product outcomes to platform execution, this is the right place to
+          start. I focus on AI systems, pragmatic delivery, durable
+          architecture, and the operations that make software sustainable.
         </p>
       </div>
       <div className="mt-12 grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
@@ -31,13 +31,16 @@ export default function ConnectPage() {
               Good fit if you’re…
             </h2>
             <ul className="list-disc space-y-2 pl-5 text-base text-zinc-600 dark:text-zinc-400">
-              <li>Hiring a senior technical leader who can own systems end-to-end</li>
+              <li>
+                Hiring a Principal or Staff+ engineer who can own systems
+                end-to-end
+              </li>
               <li>
                 Scaling a product/platform and need reliability + velocity
               </li>
               <li>
-                Building applied AI features and need pragmatic engineering
-                execution
+                Building AI platforms or agent infrastructure beyond the demo
+                stage
               </li>
             </ul>
           </section>
@@ -56,8 +59,8 @@ export default function ConnectPage() {
                 measurement)
               </li>
               <li>
-                Shipping AI-enabled product features safely (integration
-                patterns, evals, guardrails)
+                Shipping AI-enabled product features with clear permissions,
+                evaluation surfaces, and operations
               </li>
             </ul>
           </section>

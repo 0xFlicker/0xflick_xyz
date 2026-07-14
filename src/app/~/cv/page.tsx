@@ -75,9 +75,9 @@ function Tool({
   );
 }
 
-const title = "Resume";
+const title = "Experience";
 const description =
-  "Work history and experience. Company names are anonymized, but references can be provided and the names can be revealed on request.";
+  "A chronological view of the work behind the selected systems. Company names remain anonymized pending public-review decisions.";
 
 export const metadata = {
   title,
@@ -87,6 +87,29 @@ export const metadata = {
 export default function Resume() {
   return (
     <SimpleLayout title={title} intro={description}>
+      <div className="mb-20 grid gap-8 border-y border-zinc-200 py-8 dark:border-zinc-700/60 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+        <div>
+          <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+            The site is the long-form source of truth. This page preserves the
+            career chronology while the supporting résumé is tightened around
+            scope, ownership, and verified outcomes.
+          </p>
+          <Link
+            href="/flick-the-resume.pdf"
+            className="mt-5 inline-block text-sm font-semibold text-zinc-800 underline decoration-zinc-300 underline-offset-4 transition hover:text-brand-dark dark:text-zinc-100 dark:decoration-zinc-600 dark:hover:text-brand-light"
+          >
+            Open PDF résumé
+          </Link>
+        </div>
+        <ul className="grid gap-2 text-sm text-zinc-600 dark:text-zinc-400 sm:grid-cols-2 lg:grid-cols-1">
+          <li>AI and agent systems</li>
+          <li>Platforms and distributed systems</li>
+          <li>Cloud infrastructure and operations</li>
+          <li>Product and frontend architecture</li>
+          <li>APIs, integrations, and developer tools</li>
+          <li>Smart contracts and decentralized systems</li>
+        </ul>
+      </div>
       <div className="space-y-20">
         <ToolsSection
           id="major-stock-media-provider"

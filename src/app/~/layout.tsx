@@ -1,14 +1,13 @@
 import { type Metadata } from "next";
-import { Providers } from "@/app/providers";
-import { Layout } from "@/components/Layout";
+import { SiteShell } from "@/components/SiteShell";
+import { siteDescription, siteTitle } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: {
     template: "%s - Flick",
-    default: "Building the future of the web",
+    default: siteTitle,
   },
-  description:
-    "The personal website of Flick, an experienced software engineer in Colorado, USA",
+  description: siteDescription,
   alternates: {
     types: {
       "application/rss+xml": `/feed.xml`,
@@ -21,15 +20,5 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
-      <body className="flex h-full bg-zinc-50 dark:bg-black">
-        <Providers>
-          <div className="flex w-full">
-            <Layout>{children}</Layout>
-          </div>
-        </Providers>
-      </body>
-    </html>
-  );
+  return <SiteShell>{children}</SiteShell>;
 }
