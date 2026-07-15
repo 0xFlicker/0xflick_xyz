@@ -1,6 +1,26 @@
+import { formatCareerDateRange, getCareerRole } from "@/lib/career";
+
+const giphyRole = getCareerRole("giphy-2024");
+const secondShutterstockRole = getCareerRole("shutterstock-2022");
+const firstShutterstockRole = getCareerRole("shutterstock-2015");
+const vertaRole = getCareerRole("verta-2020");
+
+export const selectedWorkIds = {
+  theHouse: "the-house",
+  giphy: "giphy",
+  shutterstockCreate: "shutterstock-create",
+  shutterstockEditor: "shutterstock-editor",
+  verta: "verta",
+  morpheus: "morpheus",
+  openSource: "open-source",
+} as const;
+
+export type SelectedWorkId =
+  (typeof selectedWorkIds)[keyof typeof selectedWorkIds];
+
 export const selectedWork = [
   {
-    id: "the-house",
+    id: selectedWorkIds.theHouse,
     eyebrow: "Independent platform · Public",
     title: "The House / Influence",
     summary:
@@ -8,28 +28,44 @@ export const selectedWork = [
     focus: ["Production AI agents", "MCP + OAuth", "Event-backed runtime"],
   },
   {
-    id: "platform-scale",
-    eyebrow: "Current Principal Architect scope",
-    title: "Revenue-critical media and monetization systems",
+    id: selectedWorkIds.giphy,
+    eyebrow: `${giphyRole.displayTitle} · ${formatCareerDateRange(giphyRole)}`,
+    title: "GIPHY",
     summary:
-      "Technical direction across consumer, advertising, partner, and platform surfaces where reliability, cost, delivery pressure, and revenue consequences meet.",
-    focus: ["Cross-team architecture", "Reliability", "Monetization"],
+      "Technical direction across monetization, advertising, search, content delivery, partner, API, reliability, cost, and platform systems.",
+    focus: ["Technical direction", "Reliability + cost", "Monetization"],
   },
   {
-    id: "ml-platform",
-    eyebrow: "ML operations platform",
-    title: "Frontend and product-platform leadership",
+    id: selectedWorkIds.shutterstockCreate,
+    eyebrow: `Two tenures · ${formatCareerDateRange(firstShutterstockRole)} and ${formatCareerDateRange(secondShutterstockRole)}`,
+    title: "Shutterstock Editor → Shutterstock Create",
     summary:
-      "Technical ownership spanning the customer-facing product, GraphQL layer, delivery systems, operational integrations, and enterprise support.",
-    focus: ["Technical ownership", "Product delivery", "CI/CD + operations"],
+      "Browser-based creative products, partner integrations, marketplace modernization, cloud migrations, Kubernetes, delivery, and production support.",
+    focus: ["Creative tooling", "Partner SDK", "Cloud + operations"],
   },
   {
-    id: "supporting-work",
-    eyebrow: "Selected Web3 chapter",
-    title: "Adversarial distributed systems",
+    id: selectedWorkIds.verta,
+    eyebrow: `Enterprise MLOps · ${formatCareerDateRange(vertaRole)}`,
+    title: "Verta",
     summary:
-      "Smart contracts, collection migrations, ordinal tooling, and public protocols where permissions, permanence, and hostile inputs are architectural constraints.",
-    focus: ["Smart contracts", "Protocol tooling", "Trust boundaries"],
+      "Customer-facing product and frontend ownership across React, GraphQL, contractor leadership, releases, enterprise integrations, support, and on-call.",
+    focus: ["Frontend leadership", "GraphQL", "Delivery + support"],
+  },
+  {
+    id: selectedWorkIds.morpheus,
+    eyebrow: "Archived game modernization",
+    title: "Morpheus",
+    summary:
+      "A long-running software-preservation project: a data-driven adventure runtime shipped across browser, desktop, and mobile packaging. Source history survives; the original services do not.",
+    focus: ["Game runtime", "Cross-platform delivery", "Preservation"],
+  },
+  {
+    id: selectedWorkIds.openSource,
+    eyebrow: "CaptEmulation → 0xFlicker",
+    title: "Selected open source",
+    summary:
+      "Developer libraries, autonomous game agents, serverless systems, protocol tooling, and smart contracts across two public GitHub chapters.",
+    focus: ["Developer tools", "Autonomous systems", "Onchain infrastructure"],
   },
 ] as const;
 
