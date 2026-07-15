@@ -211,7 +211,7 @@ export default function AboutPage() {
               {leadershipPractice.map((item, index) => (
                 <article
                   key={item.title}
-                  className="border-zinc-200 py-6 sm:px-6 sm:[&:nth-child(even)]:border-l sm:[&:nth-child(n+3)]:border-t sm:first:pl-0 dark:border-zinc-700/60"
+                  className="border-zinc-200 py-6 sm:[&:nth-child(odd)]:pr-6 sm:[&:nth-child(even)]:border-l sm:[&:nth-child(even)]:pl-6 sm:[&:nth-child(n+3)]:border-t dark:border-zinc-700/60"
                 >
                   <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
                     0{index + 1}
