@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "validate:content": "node scripts/validate-content.mjs",
+    "test:content": "node --test scripts/validate-content.test.mjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.1.3",
