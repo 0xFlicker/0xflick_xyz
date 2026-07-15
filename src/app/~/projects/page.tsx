@@ -40,7 +40,7 @@ function EvidenceGrid({
       {items.map((item) => (
         <div
           key={item.label}
-          className="border-zinc-200 py-6 sm:px-6 sm:[&:nth-child(even)]:border-l sm:[&:nth-child(n+3)]:border-t sm:first:pl-0 dark:border-zinc-700/60"
+          className="border-zinc-200 py-6 sm:[&:nth-child(odd)]:pr-6 sm:[&:nth-child(even)]:border-l sm:[&:nth-child(even)]:pl-6 sm:[&:nth-child(n+3)]:border-t dark:border-zinc-700/60"
         >
           <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-dark dark:text-brand-light">
             {item.label}
