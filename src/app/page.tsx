@@ -1,13 +1,12 @@
-import type { Metadata } from "next";
-
 import { PortfolioHome } from "@/components/PortfolioHome";
 import { SiteShell } from "@/components/SiteShell";
-import { siteDescription } from "@/lib/site";
+import { createPageMetadata, siteDescription } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Principal engineer building AI platforms and internet-scale products",
+export const metadata = createPageMetadata({
+  title: "Principal Architect turning emerging platforms into production systems",
   description: siteDescription,
-};
+  path: "/",
+});
 
 export default function Page() {
   return (

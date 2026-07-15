@@ -6,10 +6,41 @@ import { ArrowLink, SectionLabel } from "@/components/PortfolioUI";
 import { capabilityAreas, selectedWork } from "@/lib/portfolio";
 
 const systemFlow = [
-  ["01", "AI agents", "Reason, negotiate, and act"],
-  ["02", "Orchestration", "State, tools, and permissions"],
-  ["03", "Game runtime", "Multiplayer execution"],
-  ["04", "Analysis", "Deterministic artifacts"],
+  ["01", "Persistent agents", "Identity, memory, and scoped tools"],
+  ["02", "Influence", "The first production game"],
+  ["03", "Event history", "Runtime, replay, and analysis"],
+  ["04", "Operations", "Infrastructure and observability"],
+] as const;
+
+const proofPoints = [
+  ["25+ years", "Production engineering"],
+  ["Principal Architect", "Hands-on technical leadership"],
+  ["Embedded → agents", "Multiple platform generations"],
+  ["Revenue-critical", "Consumer + monetization systems"],
+  ["The House", "Creator and system owner"],
+] as const;
+
+const principalScope = [
+  {
+    title: "Set technical direction",
+    description:
+      "Define system boundaries, standards, and sequencing across product, monetization, and platform concerns.",
+  },
+  {
+    title: "Align the dependency graph",
+    description:
+      "Resolve ambiguity between product goals, infrastructure constraints, delivery pressure, and revenue consequences.",
+  },
+  {
+    title: "Lead reliability and change",
+    description:
+      "Guide migrations, operational improvements, and design reviews inside mature systems that cannot simply stop.",
+  },
+  {
+    title: "Validate in the code",
+    description:
+      "Stay close to critical paths, mentor senior engineers, and test whether the architecture survives implementation.",
+  },
 ] as const;
 
 export function PortfolioHome() {
@@ -19,23 +50,22 @@ export function PortfolioHome() {
         <section className="grid items-end gap-12 border-b border-zinc-200 pb-16 dark:border-zinc-700/60 lg:grid-cols-[1.25fr_0.75fr] lg:gap-20 lg:pb-24">
           <div>
             <SectionLabel className="tracking-[0.22em]">
-              Flick · Principal engineer
+              Flick · Principal Architect
             </SectionLabel>
             <h1 className="mt-6 max-w-4xl text-balance text-5xl font-semibold tracking-[-0.045em] text-zinc-900 sm:text-6xl lg:text-7xl dark:text-white">
-              I build AI platforms, developer tools, and internet-scale
-              products.
+              Turning emerging platforms into production systems.
             </h1>
             <p className="mt-8 max-w-2xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-              Principal engineer and systems architect with roughly 25 years
-              of production experience—from embedded and consumer platforms to
-              cloud infrastructure, agent orchestration, and independent
-              products. I stay close enough to the code to know when the
-              architecture is lying.
+              I move into new platforms, learn the hard constraints, and ship.
+              The path runs from embedded systems and early smartphones through
+              streaming, cloud and MLOps, revenue-critical monetization, Web3,
+              and production AI agents. I stay close enough to the code to know
+              when the architecture is lying.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Button href="/~/projects">View selected work</Button>
               <Button variant="secondary" href="/~/cv">
-                View résumé
+                View experience
               </Button>
               <ArrowLink href="/connect">Connect</ArrowLink>
             </div>
@@ -51,12 +81,12 @@ export function PortfolioHome() {
               </span>
             </div>
             <h2 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">
-              The House
+              The House / Influence
             </h2>
             <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-              A production AI social-strategy platform built end to end: agents,
-              multiplayer runtime, permissions, product, infrastructure, and
-              operations.
+              The House is the platform. Influence is its first production game,
+              built end to end across agents, permissions, multiplayer runtime,
+              product, infrastructure, and operations.
             </p>
             <ol className="mt-8 space-y-0" aria-label="The House system flow">
               {systemFlow.map(([number, title, description], index) => (
@@ -90,23 +120,90 @@ export function PortfolioHome() {
         </section>
       </Container>
 
-      <Container className="mt-16 sm:mt-24">
+      <Container className="mt-8 sm:mt-12">
+        <section aria-label="Professional proof" className="border-y border-zinc-200 dark:border-zinc-700/60">
+          <dl className="grid sm:grid-cols-2 lg:grid-cols-5">
+            {proofPoints.map(([proof, context], index) => (
+              <div
+                key={proof}
+                className="border-zinc-200 py-5 sm:px-5 sm:[&:nth-child(even)]:border-l lg:border-l lg:first:border-l-0 dark:border-zinc-700/60"
+              >
+                <dt className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  {proof}
+                </dt>
+                <dd className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                  {context}
+                </dd>
+                <span className="sr-only">Proof point {index + 1}</span>
+              </div>
+            ))}
+          </dl>
+        </section>
+      </Container>
+
+      <Container className="mt-20 sm:mt-28">
+        <section aria-labelledby="principal-scope-heading">
+          <div className="grid gap-8 lg:grid-cols-[0.7fr_1.3fr] lg:gap-20">
+            <div>
+              <SectionLabel>Current Principal scope</SectionLabel>
+              <h2
+                id="principal-scope-heading"
+                className="mt-4 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white"
+              >
+                Monetization is architecture with a revenue consequence.
+              </h2>
+            </div>
+            <div>
+              <p className="text-lg leading-8 text-zinc-600 dark:text-zinc-300">
+                I lead architecture across mature consumer, advertising, and
+                platform systems. The work is cross-team by nature: product
+                behavior, infrastructure, reliability, cost, partner surfaces,
+                and business outcomes all shape the design.
+              </p>
+              <p className="mt-4 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+                Selected employer work is described in generalized terms to
+                respect confidentiality.
+              </p>
+            </div>
+          </div>
+          <div className="mt-10 grid border-y border-zinc-200 dark:border-zinc-700/60 sm:grid-cols-2">
+            {principalScope.map((item, index) => (
+              <article
+                key={item.title}
+                className="border-zinc-200 py-7 sm:px-6 sm:[&:nth-child(even)]:border-l sm:[&:nth-child(n+3)]:border-t sm:first:pl-0 dark:border-zinc-700/60"
+              >
+                <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
+                  0{index + 1}
+                </span>
+                <h3 className="mt-3 font-semibold text-zinc-900 dark:text-zinc-100">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                  {item.description}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+      </Container>
+
+      <Container className="mt-20 sm:mt-28">
         <section aria-labelledby="scope-heading">
           <div className="grid gap-6 lg:grid-cols-[0.65fr_1.35fr] lg:gap-20">
             <div>
-              <SectionLabel>Operating scope</SectionLabel>
+              <SectionLabel>Architectural lens</SectionLabel>
               <h2
                 id="scope-heading"
                 className="mt-4 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white"
               >
-                Systems, not demos.
+                Production is the truth serum.
               </h2>
             </div>
             <p className="max-w-3xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-              My work connects architecture to the awkward realities around it:
-              reliability, cost, permissions, developer experience, product
-              behavior, monetization, and the humans operating the system after
-              launch.
+              Architecture has to survive contact with reliability, cost,
+              permissions, developer experience, product behavior, and the
+              humans operating the system after launch. Elegant boxes are nice;
+              a system that keeps working on Tuesday afternoon is nicer.
             </p>
           </div>
           <div className="mt-12 grid border-y border-zinc-200 dark:border-zinc-700/60 sm:grid-cols-2 lg:grid-cols-4">
@@ -184,8 +281,8 @@ export function PortfolioHome() {
       </Container>
 
       <Container className="mt-24 sm:mt-32">
-        <section className="grid gap-12 border-y border-zinc-200 py-16 dark:border-zinc-700/60 lg:grid-cols-2 lg:gap-20 lg:py-20">
-          <div>
+        <section className="border-y border-zinc-200 py-16 dark:border-zinc-700/60 lg:py-20">
+          <div className="max-w-3xl">
             <SectionLabel>Career throughline</SectionLabel>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white">
               New platforms. Same job.
@@ -197,25 +294,10 @@ export function PortfolioHome() {
               turning unfamiliar constraints into software people can use and
               teams can operate.
             </p>
-            <div className="mt-8">
-              <ArrowLink href="/~/about">Read the full story</ArrowLink>
-            </div>
-          </div>
-          <div>
-            <SectionLabel>Identity bridge</SectionLabel>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white">
-              Also published as 0xFlicker.
-            </h2>
-            <p className="mt-6 text-base leading-7 text-zinc-600 dark:text-zinc-300">
-              Much of my recent experimental and open-source work appears under
-              that name: AI agents, crypto infrastructure, distributed systems,
-              identity, and independent products. The name is different; the
-              engineering throughline is the same.
-            </p>
             <div className="mt-8 flex flex-wrap gap-x-8 gap-y-4">
-              <ArrowLink href="https://github.com/0xflicker">GitHub</ArrowLink>
-              <ArrowLink href="https://x.com/0xflick">
-                X / 0xFlicker
+              <ArrowLink href="/~/about">Read the full story</ArrowLink>
+              <ArrowLink href="https://github.com/0xflicker">
+                Open-source work as 0xFlicker
               </ArrowLink>
             </div>
           </div>
@@ -229,13 +311,12 @@ export function PortfolioHome() {
               What’s next
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Building an AI platform, agent system, or difficult product
-              surface?
+              Need architecture that can survive production?
             </h2>
             <p className="mt-5 leading-7 text-brand-light/80 dark:text-brand-dark/80">
-              I’m open to Principal and Staff+ engineering roles, architecture
-              leadership, and selected conversations where hands-on systems
-              work matters.
+              I’m open to Principal Architect, Principal Engineer, and Staff+
+              roles, plus selected advisory work where hands-on systems judgment
+              matters.
             </p>
           </div>
           <div className="mt-8 flex flex-wrap gap-5 lg:mt-0 lg:flex-col lg:items-start">

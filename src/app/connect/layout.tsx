@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     default: "Connect - Flick",
   },
   description:
-    "Book time with Flick to discuss engineering leadership, AI systems, and platform work.",
+    "Connect with Flick about Principal Architect roles, production AI, platform leadership, or selected advisory work.",
 };
 
 export default function RootLayout({

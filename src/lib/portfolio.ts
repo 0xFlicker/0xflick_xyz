@@ -1,19 +1,19 @@
 export const selectedWork = [
   {
     id: "the-house",
-    eyebrow: "Independent AI platform · Active",
-    title: "The House",
+    eyebrow: "Independent platform · Public",
+    title: "The House / Influence",
     summary:
-      "A production social-strategy platform where autonomous agents negotiate, form alliances, compete, and leave behind a deterministic record of what happened.",
-    focus: ["Agent orchestration", "MCP + OAuth", "Production operations"],
+      "The House is the platform. Influence is its first production game: persistent agents, multiplayer orchestration, scoped tools, replay, analysis, and operations.",
+    focus: ["Production AI agents", "MCP + OAuth", "Event-backed runtime"],
   },
   {
     id: "platform-scale",
-    eyebrow: "Internet-scale media systems",
-    title: "Platform work under real traffic",
+    eyebrow: "Current Principal Architect scope",
+    title: "Revenue-critical media and monetization systems",
     summary:
-      "Search, content delivery, partner integrations, monetization, reliability, and cost-aware operations inside a mature consumer platform.",
-    focus: ["Platform reliability", "Search + delivery", "Monetization systems"],
+      "Technical direction across consumer, advertising, partner, and platform surfaces where reliability, cost, delivery pressure, and revenue consequences meet.",
+    focus: ["Cross-team architecture", "Reliability", "Monetization"],
   },
   {
     id: "ml-platform",
@@ -24,20 +24,20 @@ export const selectedWork = [
     focus: ["Technical ownership", "Product delivery", "CI/CD + operations"],
   },
   {
-    id: "onchain-systems",
-    eyebrow: "Published as 0xFlicker",
-    title: "On-chain systems and developer tools",
+    id: "supporting-work",
+    eyebrow: "Selected Web3 chapter",
+    title: "Adversarial distributed systems",
     summary:
-      "Smart contracts, digital ownership, identity, collection migrations, ordinal tooling, and experiments with programs that live entirely on-chain.",
-    focus: ["Smart contracts", "Protocol tooling", "Digital identity"],
+      "Smart contracts, collection migrations, ordinal tooling, and public protocols where permissions, permanence, and hostile inputs are architectural constraints.",
+    focus: ["Smart contracts", "Protocol tooling", "Trust boundaries"],
   },
 ] as const;
 
 export const capabilityAreas = [
   {
-    title: "AI and agent systems",
+    title: "Production AI systems",
     description:
-      "Orchestration, tool use, permissions, evaluation surfaces, and the product systems around models.",
+      "Agent identity, orchestration, tool boundaries, permissions, durable state, and the product systems around models.",
   },
   {
     title: "Platforms and distributed systems",
@@ -45,13 +45,13 @@ export const capabilityAreas = [
       "APIs, developer tooling, service boundaries, reliability, cost, and systems that teams can operate.",
   },
   {
-    title: "Product engineering",
+    title: "Consumer + monetization systems",
     description:
-      "Architecture that reaches the interface: full-stack delivery, frontend systems, integrations, and business constraints.",
+      "Architecture that reaches the interface while respecting revenue, experimentation, partner, and customer consequences.",
   },
   {
-    title: "Infrastructure and operations",
+    title: "Developer experience + operations",
     description:
-      "Cloud platforms, Kubernetes, CI/CD, observability, incident response, and production ownership.",
+      "Platforms, CI/CD, observability, standards, and paths that let teams ship and operate systems safely.",
   },
 ] as const;
