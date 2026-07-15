@@ -34,9 +34,9 @@ const principalScope = [
       "Guide migrations, operational improvements, and design reviews inside mature systems that cannot simply stop.",
   },
   {
-    title: "Validate in the code",
+    title: "Respond to emergent problems",
     description:
-      "Stay close to critical paths, mentor senior engineers, and use implementation feedback before assumptions harden.",
+      "Address incidents, outages, and unexpected product behavior across multiple teams and systems, often under time pressure.",
   },
 ] as const;
 
@@ -132,8 +132,8 @@ export function PortfolioHome() {
             </div>
             <div>
               <p className="text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-                At GIPHY, I set technical direction across monetization,
-                advertising, search, content delivery, partner, API, and
+                At GIPHY, I set technical direction across monetization and
+                advertising across search, content delivery, partner, API, and
                 platform systems. Reliability, infrastructure cost, delivery,
                 and product behavior all shape the work.
               </p>
