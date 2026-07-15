@@ -3,7 +3,11 @@ import { Inter } from "next/font/google";
 
 import "@/styles/tailwind.css";
 import {
+  brandName,
+  professionalName,
   professionalTitle,
+  profileLinks,
+  publishingName,
   siteDescription,
   siteName,
   socialImage,
@@ -17,13 +21,13 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.OG_URL ?? siteUrl),
   applicationName: siteName,
   title: {
-    template: "Flick - %s",
+    template: `${siteName} — %s`,
     default: siteTitle,
   },
   description: siteDescription,
-  authors: [{ name: siteName, url: siteUrl }],
-  creator: siteName,
-  publisher: siteName,
+  authors: [{ name: professionalName, url: siteUrl }],
+  creator: professionalName,
+  publisher: professionalName,
   keywords: [
     professionalTitle,
     "hands-on engineering leadership",
@@ -58,18 +62,31 @@ export const metadata: Metadata = {
 const personSchema = {
   "@context": "https://schema.org",
   "@type": "Person",
-  name: siteName,
-  url: siteUrl,
+  name: professionalName,
+  alternateName: [brandName, publishingName, "CaptEmulation"],
+  url: `${siteUrl}/`,
   jobTitle: professionalTitle,
+  worksFor: {
+    "@type": "Organization",
+    name: "GIPHY",
+  },
+  alumniOf: {
+    "@type": "CollegeOrUniversity",
+    name: "The University of Texas at Austin",
+  },
   description: siteDescription,
-  sameAs: ["https://github.com/0xflicker", "https://x.com/0xflick"],
+  sameAs: [
+    profileLinks.github,
+    profileLinks.originalGithub,
+    profileLinks.linkedIn,
+  ],
   knowsAbout: [
     "Production AI systems",
     "Platform engineering",
     "Distributed systems",
     "Developer experience",
     "Monetization systems",
-    "Web3 systems",
+    "Applied AI",
   ],
 };
 

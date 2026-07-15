@@ -2,12 +2,21 @@ import type { Metadata } from "next";
 
 import { Container } from "@/components/Container";
 import { ArrowLink, SectionLabel } from "@/components/PortfolioUI";
-import { createPageMetadata } from "@/lib/site";
+import {
+  formatCareerDateRange,
+  getCareerRole,
+  type CareerRoleId,
+} from "@/lib/career";
+import {
+  selectedWorkIds,
+  type SelectedWorkId,
+} from "@/lib/portfolio";
+import { createPageMetadata, profileLinks } from "@/lib/site";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Selected systems and case studies",
+  title: "Selected work",
   description:
-    "Case studies in production AI agents, revenue-critical platforms, MLOps, streaming, and adversarial distributed systems led by Flick.",
+    "Selected systems built and operated by John Dean / Flick: The House, GIPHY, Shutterstock Create, Shutterstock Editor, Verta, Morpheus, and open-source work.",
   path: "/~/projects",
 });
 
@@ -55,158 +64,256 @@ function EvidenceGrid({
 }
 
 const houseArchitecture = [
-  {
-    title: "Access + identity",
-    description:
-      "User accounts, agent ownership, persistent profiles, OAuth, and narrowly scoped permissions.",
-  },
-  {
-    title: "Agent platform",
-    description:
-      "Standing agents, revisions, model and tool configuration, and continuity across competitions.",
-  },
-  {
-    title: "Influence runtime",
-    description:
-      "Public discussion, private Mingle rooms, alliances, powers, voting, and long-running multiplayer execution.",
-  },
-  {
-    title: "History + artifacts",
-    description:
-      "Canonical events drive replay, results, analysis read models, producer evidence, and post-game media.",
-  },
-  {
-    title: "Production operations",
-    description:
-      "Web, API, PostgreSQL, background execution, render workers, storage, deployment, and observability.",
-  },
+  [
+    "Access + identity",
+    "User accounts, agent ownership, persistent profiles, OAuth, and narrowly scoped permissions.",
+  ],
+  [
+    "Agent platform",
+    "Standing agents, revisions, model and tool configuration, and continuity across competitions.",
+  ],
+  [
+    "Influence runtime",
+    "Public discussion, private rooms, alliances, powers, voting, and long-running multiplayer execution.",
+  ],
+  [
+    "History + artifacts",
+    "Canonical events drive replay, results, analysis, producer evidence, and post-game media.",
+  ],
+  [
+    "Production operations",
+    "Web, API, PostgreSQL, background and render workers, storage, deployment, and observability.",
+  ],
 ] as const;
 
-const employerCases = [
+type WorkStory = {
+  id: SelectedWorkId;
+  eyebrow: string;
+  title: string;
+  careerRoleId?: CareerRoleId;
+  meta?: string;
+  intro: string;
+  evidence: readonly { label: string; description: string }[];
+  links?: readonly { href: string; label: string }[];
+};
+
+function getWorkStoryMeta(story: WorkStory) {
+  if (!story.careerRoleId) return story.meta;
+
+  const role = getCareerRole(story.careerRoleId);
+  return [
+    role.displayTitle,
+    role.company === story.title ? undefined : role.company,
+    formatCareerDateRange(role),
+    role.officialTitle && role.officialTitle !== role.displayTitle
+      ? `Official title: ${role.officialTitle}`
+      : undefined,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+const workStories: readonly WorkStory[] = [
   {
-    id: "platform-scale",
-    eyebrow: "02 · Current Principal Architect scope",
-    title: "Revenue-critical media and monetization systems",
-    meta: "2022–Present · Employer anonymized",
+    id: selectedWorkIds.giphy,
+    eyebrow: "02 · Current role",
+    title: "GIPHY",
+    careerRoleId: "giphy-2024",
     intro:
-      "Technical direction across mature consumer, advertising, partner, and platform surfaces where architecture carries a revenue consequence.",
+      "Set technical direction across GIPHY’s monetization, advertising, search, delivery, partner, API, and platform systems.",
     evidence: [
       {
         label: "Context",
         description:
-          "A mature consumer media platform spanning search, content delivery, creative tools, partner integrations, advertising, and monetization.",
-      },
-      {
-        label: "Constraint",
-        description:
-          "New capability has to coexist with real traffic, operational ownership, delivery pressure, cost, and business-critical behavior.",
-      },
-      {
-        label: "Intervention",
-        description:
-          "Set technical direction, establish boundaries and standards, align product and infrastructure decisions, review designs, and lead critical implementation paths.",
+          "A mature consumer media product where revenue systems, search, content delivery, partner surfaces, and platform concerns meet.",
       },
       {
         label: "Scope",
         description:
-          "Cross-team architecture, monetization and advertising surfaces, developer integrations, cloud operations, reliability, observability, and incident response.",
+          "Architecture, design review, migrations, reliability, operational ownership, infrastructure cost, and hands-on validation of critical paths.",
       },
       {
-        label: "Outcome",
+        label: "Operating constraints",
         description:
-          "A coherent path for changing revenue-critical systems without treating reliability, operability, or delivery as somebody else’s problem.",
+          "New work must coexist with product behavior, delivery pressure, existing integrations, and the reliability expectations of a high-traffic platform.",
+      },
+      {
+        label: "Work delivered",
+        description:
+          "Technical direction and implementation review for changes across monetization, consumer, partner, and platform systems. Public metrics are intentionally omitted until verified.",
       },
     ],
   },
   {
-    id: "ml-platform",
-    eyebrow: "03 · ML operations platform",
-    title: "Product-platform ownership inherited from the CTO",
-    meta: "2020–2022 · Frontend Lead · Employer anonymized",
+    id: selectedWorkIds.shutterstockCreate,
+    eyebrow: "03 · Creative platform",
+    title: "Shutterstock Create",
+    careerRoleId: "shutterstock-2022",
     intro:
-      "Technical leadership for an enterprise MLOps product, carrying the customer-facing system through architecture, delivery, operations, and support.",
+      "Returned to Shutterstock after the PicMonkey acquisition to help integrate and evolve the company’s browser-based creative platform.",
     evidence: [
       {
-        label: "Context",
+        label: "Product",
         description:
-          "A startup product connecting model operations to enterprise customers through a web application, GraphQL layer, integrations, and delivery infrastructure.",
-      },
-      {
-        label: "Constraint",
-        description:
-          "Frontend ownership moved from the CTO while product work, subcontractor coordination, operational integration, and customer commitments continued.",
-      },
-      {
-        label: "Intervention",
-        description:
-          "Took technical ownership, set frontend direction, built orchestration layers for engineers, coordinated subcontractors, and connected product delivery to CI/CD and operations.",
+          "Browser-based creative tooling brought into Shutterstock and developed into Shutterstock Create.",
       },
       {
         label: "Scope",
         description:
-          "Marketing and product surfaces, GraphQL, enterprise customization, CI/CD, operational integrations, customer support, and production on-call.",
+          "Product engineering, cloud infrastructure, Kubernetes, deployment, production support, and integration with the broader Shutterstock product environment.",
       },
       {
-        label: "Outcome",
+        label: "Shipped result",
         description:
-          "Converted a CTO-held product surface into a broader engineering capability with a clearer delivery and operational ownership model.",
+          "Helped deliver Shutterstock Create and transition away from the previous Shutterstock Editor platform.",
+      },
+      {
+        label: "Career context",
+        description:
+          "Returned with broader startup, multiplayer product, and MLOps experience than during the first Shutterstock tenure.",
+      },
+    ],
+  },
+  {
+    id: selectedWorkIds.shutterstockEditor,
+    eyebrow: "04 · Creative product + marketplace",
+    title: "Shutterstock Editor",
+    careerRoleId: "shutterstock-2015",
+    intro:
+      "Helped build Shutterstock’s browser-based image editor while also contributing to the core marketplace and its production operations.",
+    evidence: [
+      {
+        label: "Product",
+        description:
+          "A full-stack creative application built with JavaScript, React, HTML Canvas, WebGL, and Node.js.",
+      },
+      {
+        label: "Lead work",
+        description:
+          "Led internationalization, partner SDK development, and the application’s migration to AWS and Kubernetes.",
+      },
+      {
+        label: "Marketplace",
+        description:
+          "Contributed to cart, checkout, product features, and legacy Perl-to-Node modernization on the core Shutterstock platform.",
+      },
+      {
+        label: "Operations",
+        description:
+          "Shared rotating 24/7 production on-call responsibility for product surfaces used by real customers and partners.",
+      },
+    ],
+  },
+  {
+    id: selectedWorkIds.verta,
+    eyebrow: "05 · Enterprise MLOps",
+    title: "Verta",
+    careerRoleId: "verta-2020",
+    intro:
+      "Took over customer-facing product and frontend ownership from the CTO for an enterprise model-management platform.",
+    evidence: [
+      {
+        label: "Product",
+        description:
+          "A React and GraphQL application connecting enterprise users to model-management and operations workflows.",
+      },
+      {
+        label: "Ownership",
+        description:
+          "Designed and built web features, wrote GraphQL resolvers against backend APIs, and maintained tests, builds, and releases.",
+      },
+      {
+        label: "Leadership",
+        description:
+          "Led three overseas frontend contractors and expanded customer-facing product ownership beyond the CTO.",
+      },
+      {
+        label: "Operations",
+        description:
+          "Contributed to CI/CD, operations integrations, enterprise customization, customer support, delivery, and production on-call.",
+      },
+    ],
+  },
+  {
+    id: selectedWorkIds.morpheus,
+    eyebrow: "06 · Archived game modernization",
+    title: "Morpheus",
+    meta: "Cross-platform modernization and software preservation",
+    intro:
+      "A six-to-eight-year effort to modernize a late-1990s graphical adventure game through a data-driven runtime and multiple distribution targets.",
+    evidence: [
+      {
+        label: "Runtime",
+        description:
+          "Modeled panoramas, video, audio, hotspots, state, triggers, and puzzle logic as data rather than one-off scene code.",
+      },
+      {
+        label: "Distribution",
+        description:
+          "Shipped through browser, Electron desktop, PhoneGap mobile, and later Next.js experiments across the project’s active years.",
+      },
+      {
+        label: "Technical record",
+        description:
+          "Public source, tags, commits, and development records survive across the Soap Bubble organization.",
+      },
+      {
+        label: "Current status",
+        description:
+          "Archived. The original backend, cloud environment, and domain are unavailable, so historical distributed builds are not presented as functional or supported.",
+      },
+    ],
+    links: [
+      {
+        href: "https://github.com/soap-bubble/web",
+        label: "Inspect the Morpheus source archive on GitHub",
       },
     ],
   },
 ] as const;
 
-const supportingWork = [
+const openSource = [
   {
-    title: "Web3 and adversarial distributed systems",
-    meta: "Selected work published as 0xFlicker",
-    details: [
-      {
-        label: "Why it was difficult",
-        description:
-          "Public state, irreversible execution, hostile inputs, wallet permissions, and protocol compatibility leave little room for hand-wavy boundaries.",
-      },
-      {
-        label: "What I owned",
-        description:
-          "Smart contracts, NFT collection migrations, ordinal tooling, on-chain experiments, product surfaces, and operational handoffs.",
-      },
-      {
-        label: "Judgment required",
-        description:
-          "Balance permanence with upgrade paths, minimize trust, make signing legible, and choose where on-chain execution buys enough to justify the cost.",
-      },
-      {
-        label: "What it demonstrates",
-        description:
-          "Practical security thinking, permission design, distributed-state reasoning, developer ergonomics, and respect for irreversible failure.",
-      },
-    ],
+    title: "Mold / service-builder",
+    description:
+      "A functional dependency-injection library I created for internal Shutterstock use and later helped release as open source.",
+    href: "https://github.com/shutterstock/mold",
+    account: "shutterstock/mold",
   },
   {
-    title: "Streaming, embedded, and consumer platforms",
-    meta: "Earlier platform work · 2000–2020",
-    details: [
-      {
-        label: "Why it was difficult",
-        description:
-          "Constrained devices, remote-control interfaces, live streams, payments, scheduling, performance ceilings, and visible consumer failures shared the same systems.",
-      },
-      {
-        label: "What I owned",
-        description:
-          "Embedded testing, smartphone SDK tooling, mobile consulting, streaming interfaces, and a multiplayer live-event web platform.",
-      },
-      {
-        label: "Judgment required",
-        description:
-          "Choose abstractions that fit the runtime, protect performance and memory, and deliver product behavior across unreliable boundaries.",
-      },
-      {
-        label: "What it demonstrates",
-        description:
-          "The career throughline: learn the platform beneath the framework and ship systems people can use and teams can operate.",
-      },
-    ],
+    title: "Clash of Clans API client",
+    description:
+      "An older published Node.js API library with external use, preserved on my original professional account.",
+    href: "https://github.com/CaptEmulation/clash-of-clans-api",
+    account: "CaptEmulation",
+  },
+  {
+    title: "Screeps",
+    description:
+      "Autonomous game-agent work that began in the CaptEmulation chapter and continues to inform current agent-system work.",
+    href: "https://github.com/CaptEmulation/screeps-redux",
+    account: "CaptEmulation",
+  },
+  {
+    title: "Ranker",
+    description:
+      "A serverless DynamoDB leaderboard with bounded top-N maintenance and exact rank resolution for any member.",
+    href: "https://github.com/0xFlicker/ranker",
+    account: "0xFlicker",
+  },
+  {
+    title: "Inscriptions",
+    description:
+      "Published TypeScript tooling for Bitcoin Ordinals and inscriptions.",
+    href: "https://github.com/flick-ing/inscriptions",
+    account: "flick-ing",
+  },
+  {
+    title: "Fame contracts",
+    description:
+      "Smart contracts and migration infrastructure for Fame Lady Society.",
+    href: "https://github.com/fame-lady-society/fame-contracts",
+    account: "fame-lady-society",
   },
 ] as const;
 
@@ -214,26 +321,25 @@ export default function ProjectsPage() {
   return (
     <Container className="mt-16 sm:mt-28">
       <header className="max-w-4xl border-b border-zinc-200 pb-14 dark:border-zinc-700/60 sm:pb-20">
-        <SectionLabel>Selected systems</SectionLabel>
+        <SectionLabel>Selected work</SectionLabel>
         <h1 className="mt-6 text-balance text-5xl font-semibold tracking-[-0.04em] text-zinc-900 sm:text-6xl dark:text-white">
-          Architecture with receipts.
+          Systems I’ve built, changed, and operated.
         </h1>
         <p className="mt-7 max-w-3xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-          The work below is organized around system context, constraints,
-          ownership, decisions, and operational consequences - not capability
-          cards wearing tiny neckties.
-        </p>
-        <p className="mt-4 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-          Selected employer work is described in generalized terms to respect
-          confidentiality.
+          Named products, public-safe scope, and concrete shipped work. No
+          invented metrics and no need for every project to cosplay as a case
+          study.
         </p>
       </header>
 
       <div className="divide-y divide-zinc-200 dark:divide-zinc-700/60">
-        <article id="the-house" className="scroll-mt-24 py-16 sm:py-24">
+        <article
+          id={selectedWorkIds.theHouse}
+          className="scroll-mt-24 py-16 sm:py-24"
+        >
           <div className="grid gap-12 lg:grid-cols-[0.72fr_1.28fr] lg:gap-20">
             <div>
-              <SectionLabel>01 · Public AI platform</SectionLabel>
+              <SectionLabel>01 · Current independent flagship</SectionLabel>
               <h2 className="mt-4 text-4xl font-semibold tracking-tight text-zinc-900 dark:text-white">
                 The House / Influence
               </h2>
@@ -242,12 +348,14 @@ export default function ProjectsPage() {
                 game.
               </p>
               <div className="mt-8 flex flex-col items-start gap-4">
-                <ArrowLink href="https://thehouse.game">Open The House</ArrowLink>
+                <ArrowLink href="https://thehouse.game">
+                  Open The House live product
+                </ArrowLink>
                 <ArrowLink href="https://github.com/0xFlicker/influence-game">
-                  Inspect the source
+                  Inspect influence-game on GitHub
                 </ArrowLink>
                 <ArrowLink href="https://github.com/0xFlicker/influence-game/blob/main/Design.md">
-                  Read the system design
+                  Read The House system design
                 </ArrowLink>
               </div>
             </div>
@@ -255,11 +363,10 @@ export default function ProjectsPage() {
             <div>
               <p className="text-xl leading-8 text-zinc-700 dark:text-zinc-200">
                 A platform for persistent AI agents to enter social-strategy
-                competitions, communicate across public and private spaces, act
-                through scoped tools, and leave behind a durable record that can
-                be replayed and analyzed.
+                competitions, communicate in public and private, act through
+                scoped tools, and leave behind a durable record for replay and
+                analysis.
               </p>
-
               <div className="mt-12 grid gap-10 sm:grid-cols-2">
                 <section aria-labelledby="house-problem">
                   <h3
@@ -269,10 +376,10 @@ export default function ProjectsPage() {
                     Product problem
                   </h3>
                   <p className="mt-4 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                    Agent demos usually end at the chat boundary. The House has
-                    to make agents legible as durable participants: identity,
-                    history, permissions, competition state, private strategy,
-                    public behavior, and evidence after the game.
+                    Agent demos usually stop at chat. The House has to make
+                    agents durable participants with identity, ownership,
+                    permissions, private strategy, public behavior, game state,
+                    and evidence after play.
                   </p>
                 </section>
                 <section aria-labelledby="house-ownership">
@@ -283,10 +390,10 @@ export default function ProjectsPage() {
                     Ownership
                   </h3>
                   <p className="mt-4 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                    I created and own the platform end to end: product model,
-                    agent and game orchestration, frontend, API, identity and
-                    permissions, MCP surfaces, infrastructure, deployment,
-                    operations, analysis, replay, and post-game media.
+                    I build and operate the platform end to end: product model,
+                    game orchestration, frontend, API, OAuth, MCP, permissions,
+                    infrastructure, deployment, replay, analysis, and post-game
+                    media.
                   </p>
                 </section>
               </div>
@@ -296,22 +403,22 @@ export default function ProjectsPage() {
                   id="architecture-heading"
                   className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-dark dark:text-brand-light"
                 >
-                  System architecture
+                  System shape
                 </h3>
                 <ol className="mt-6 rounded-2xl bg-brand-light/20 p-6 dark:bg-brand-dark/20 sm:p-8">
-                  {houseArchitecture.map((layer, index) => (
+                  {houseArchitecture.map(([title, description], index) => (
                     <li
-                      key={layer.title}
+                      key={title}
                       className="grid gap-3 border-b border-brand-dark/15 py-5 first:pt-0 last:border-b-0 last:pb-0 dark:border-brand-light/20 sm:grid-cols-[3rem_0.65fr_1.35fr]"
                     >
                       <span className="font-mono text-[10px] text-brand-dark dark:text-brand-light">
                         0{index + 1}
                       </span>
                       <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">
-                        {layer.title}
+                        {title}
                       </h4>
                       <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                        {layer.description}
+                        {description}
                       </p>
                     </li>
                   ))}
@@ -323,137 +430,109 @@ export default function ProjectsPage() {
                   id="constraints-heading"
                   className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-dark dark:text-brand-light"
                 >
-                  Unusual constraints
+                  Production constraints
                 </h3>
                 <div className="mt-6">
                   <ScopeList
                     items={[
-                      "Persistent agent identity without freezing agent behavior forever",
-                      "OAuth scopes and MCP tool boundaries that reflect real ownership",
-                      "Public rooms, private communication, and producer-only evidence",
+                      "Persistent agent identity without freezing behavior forever",
+                      "OAuth scopes and MCP tools that reflect real ownership",
+                      "Public rooms, private communication, and audience-shaped evidence",
                       "Long-running multiplayer orchestration with durable recovery",
-                      "Canonical event history for replay, results, and auditability",
+                      "Canonical events for replay, results, and analysis",
                       "Model-generated behavior without treating model memory as system state",
                     ]}
                   />
                 </div>
               </section>
-
-              <section className="mt-12" aria-labelledby="decisions-heading">
-                <h3
-                  id="decisions-heading"
-                  className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-dark dark:text-brand-light"
-                >
-                  Architectural decisions
-                </h3>
-                <div className="mt-6">
-                  <EvidenceGrid
-                    items={[
-                      {
-                        label: "Platform before game",
-                        description:
-                          "The House owns agent identity, permissions, competitions, and artifacts; Influence owns the social-strategy rules.",
-                      },
-                      {
-                        label: "Events before summaries",
-                        description:
-                          "Replay, results, analysis, and recovery derive from accepted canonical events rather than an opaque transcript.",
-                      },
-                      {
-                        label: "Audience-shaped access",
-                        description:
-                          "Public watchers, agent owners, and producers receive different read and action surfaces instead of one privileged API.",
-                      },
-                      {
-                        label: "Artifacts from durable state",
-                        description:
-                          "Post-game analysis and media are generated from the recorded game, making the output addressable and reviewable.",
-                      },
-                    ]}
-                  />
-                </div>
-              </section>
-
-              <section className="mt-12 border-l-2 border-brand-dark pl-6 dark:border-brand-light sm:pl-8" aria-labelledby="running-heading">
-                <h3
-                  id="running-heading"
-                  className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-dark dark:text-brand-light"
-                >
-                  Running today
-                </h3>
-                <p className="mt-4 leading-7 text-zinc-600 dark:text-zinc-300">
-                  The public product, persistent agent profiles, competition
-                  entry, durable game execution, spectator and results surfaces,
-                  OAuth-protected MCP tools, replay and analysis models, and the
-                  post-game media pipeline are implemented and deployed.
-                </p>
-              </section>
             </div>
           </div>
         </article>
 
-        {employerCases.map((caseStudy) => (
+        {workStories.map((story) => (
           <article
-            key={caseStudy.id}
-            id={caseStudy.id}
+            key={story.id}
+            id={story.id}
             className="scroll-mt-24 py-16 sm:py-24"
           >
             <div className="grid gap-12 lg:grid-cols-[0.72fr_1.28fr] lg:gap-20">
               <div>
-                <SectionLabel>{caseStudy.eyebrow}</SectionLabel>
+                <SectionLabel>{story.eyebrow}</SectionLabel>
                 <h2 className="mt-4 text-4xl font-semibold tracking-tight text-zinc-900 dark:text-white">
-                  {caseStudy.title}
+                  {story.title}
                 </h2>
                 <p className="mt-3 text-sm font-medium leading-6 text-zinc-500 dark:text-zinc-400">
-                  {caseStudy.meta}
+                  {getWorkStoryMeta(story)}
                 </p>
+                {story.links && (
+                  <div className="mt-7 flex flex-col items-start gap-4">
+                    {story.links.map((link) => (
+                      <ArrowLink key={link.href} href={link.href}>
+                        {link.label}
+                      </ArrowLink>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
                 <p className="text-xl leading-8 text-zinc-700 dark:text-zinc-200">
-                  {caseStudy.intro}
+                  {story.intro}
                 </p>
                 <div className="mt-10">
-                  <EvidenceGrid items={caseStudy.evidence} />
+                  <EvidenceGrid items={story.evidence} />
                 </div>
               </div>
             </div>
           </article>
         ))}
 
-        <section id="supporting-work" className="scroll-mt-24 py-16 sm:py-24">
+        <section
+          id={selectedWorkIds.openSource}
+          className="scroll-mt-24 py-16 sm:py-24"
+        >
           <div className="max-w-3xl">
-            <SectionLabel>04 · Supporting work</SectionLabel>
+            <SectionLabel>07 · Selected open source</SectionLabel>
             <h2 className="mt-4 text-4xl font-semibold tracking-tight text-zinc-900 dark:text-white">
-              Different platforms. The same engineering judgment.
+              CaptEmulation → 0xFlicker
             </h2>
+            <p className="mt-6 text-lg leading-8 text-zinc-600 dark:text-zinc-300">
+              The account changed; the engineering history did not. This is a
+              compact selection with architectural signal, not a repository
+              directory.
+            </p>
           </div>
-          <div className="mt-12 space-y-16">
-            {supportingWork.map((work) => (
+          <div className="mt-12 grid border-y border-zinc-200 dark:border-zinc-700/60 sm:grid-cols-2">
+            {openSource.map((project) => (
               <article
-                key={work.title}
-                className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:gap-20"
+                key={project.title}
+                className="border-zinc-200 py-7 sm:[&:nth-child(odd)]:pr-7 sm:[&:nth-child(even)]:border-l sm:[&:nth-child(even)]:pl-7 sm:[&:nth-child(n+3)]:border-t dark:border-zinc-700/60"
               >
-                <div>
-                  <h3 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">
-                    {work.title}
-                  </h3>
-                  <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
-                    {work.meta}
-                  </p>
+                <p className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
+                  {project.account}
+                </p>
+                <h3 className="mt-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                  {project.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                  {project.description}
+                </p>
+                <div className="mt-5">
+                  <ArrowLink href={project.href}>
+                    Open {project.title} on GitHub
+                  </ArrowLink>
                 </div>
-                <EvidenceGrid items={work.details} />
               </article>
             ))}
           </div>
-          <div className="mt-12 flex flex-wrap gap-x-8 gap-y-4">
-            <ArrowLink href="https://github.com/fame-lady-society/fame-contracts">
-              FAME contracts
+          <div className="mt-10 flex flex-wrap gap-x-8 gap-y-4">
+            <ArrowLink href={profileLinks.github}>
+              Browse 0xFlicker on GitHub
             </ArrowLink>
-            <ArrowLink href="https://github.com/flick-ing/inscriptions">
-              Inscriptions library
+            <ArrowLink href={profileLinks.originalGithub}>
+              Browse CaptEmulation on GitHub
             </ArrowLink>
             <ArrowLink href="/~/projects/archive">
-              Browse the internal project archive
+              Browse the 0xFlicker / onchain project archive
             </ArrowLink>
           </div>
         </section>
@@ -462,15 +541,10 @@ export default function ProjectsPage() {
       <section className="border-t border-zinc-200 py-16 dark:border-zinc-700/60 sm:py-20">
         <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
           <div className="max-w-3xl">
-            <SectionLabel>The standard</SectionLabel>
+            <SectionLabel>Next</SectionLabel>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white">
-              Architecture earns its keep in production.
+              View the full career sequence or start a conversation.
             </h2>
-            <p className="mt-5 leading-7 text-zinc-600 dark:text-zinc-300">
-              It has to survive permissions, latency, cost, reliability,
-              migrations, delivery pressure, and the team operating it after the
-              diagram is forgotten.
-            </p>
           </div>
           <div className="flex flex-wrap gap-x-8 gap-y-4">
             <ArrowLink href="/~/cv">View experience</ArrowLink>

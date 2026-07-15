@@ -1,9 +1,9 @@
 import { PortfolioHome } from "@/components/PortfolioHome";
 import { SiteShell } from "@/components/SiteShell";
-import { createPageMetadata, siteDescription } from "@/lib/site";
+import { createPageMetadata, siteDescription, siteTitle } from "@/lib/site";
 
 export const metadata = createPageMetadata({
-  title: "Principal Architect turning emerging platforms into production systems",
+  title: siteTitle,
   description: siteDescription,
   path: "/",
 });

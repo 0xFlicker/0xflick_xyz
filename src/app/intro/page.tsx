@@ -8,7 +8,7 @@ import { createPageMetadata } from "@/lib/site";
 export const metadata: Metadata = createPageMetadata({
   title: "Interactive intro",
   description:
-    "The original flick.ing WebGL introduction, preserved as an interactive design artifact.",
+    "The original John Dean / Flick WebGL introduction, preserved as an interactive design artifact.",
   path: "/intro",
 });
 

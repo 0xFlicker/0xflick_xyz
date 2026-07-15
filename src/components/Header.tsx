@@ -15,6 +15,7 @@ import clsx from "clsx";
 import { Container } from "@/components/Container";
 import avatarImage from "@/images/avatar.png";
 import { navigationItems } from "@/lib/navigation";
+import { siteName } from "@/lib/site";
 
 function CloseIcon(props: React.ComponentPropsWithoutRef<"svg">) {
   return (
@@ -189,13 +190,13 @@ function Avatar({
   return (
     <Link
       href="/"
-      aria-label="Home"
+      aria-label={`${siteName} home`}
       className={clsx(className, "pointer-events-auto")}
       {...props}
     >
       <Image
         src={avatarImage}
-        alt=""
+        alt="Flick gold hand mark"
         sizes="2.25rem"
         className="h-9 w-9 rounded-full bg-zinc-100 object-cover dark:bg-zinc-800"
         priority
@@ -295,10 +296,16 @@ export function Header() {
           }}
         >
           <div className="relative flex gap-4">
-            <div className="flex flex-1">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
               <AvatarContainer>
                 <Avatar />
               </AvatarContainer>
+              <Link
+                href="/"
+                className="pointer-events-auto hidden truncate text-sm font-semibold tracking-tight text-zinc-800 outline-offset-4 transition hover:text-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-dark sm:block dark:text-zinc-100 dark:hover:text-brand-light dark:focus-visible:outline-brand-light"
+              >
+                {siteName}
+              </Link>
             </div>
             <div className="flex flex-1 justify-end md:justify-center">
               <MobileNavigation className="pointer-events-auto md:hidden" />

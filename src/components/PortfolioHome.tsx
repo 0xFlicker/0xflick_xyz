@@ -3,7 +3,12 @@ import Link from "next/link";
 import { Button } from "@/components/Button";
 import { Container } from "@/components/Container";
 import { ArrowLink, SectionLabel } from "@/components/PortfolioUI";
-import { capabilityAreas, selectedWork } from "@/lib/portfolio";
+import {
+  capabilityAreas,
+  selectedWork,
+  selectedWorkIds,
+} from "@/lib/portfolio";
+import { profileLinks } from "@/lib/site";
 
 const systemFlow = [
   ["01", "Persistent agents", "Identity, memory, and scoped tools"],
@@ -19,9 +24,9 @@ const principalScope = [
       "Define system boundaries, standards, and sequencing across product, monetization, and platform concerns.",
   },
   {
-    title: "Align the dependency graph",
+    title: "Resolve cross-team constraints",
     description:
-      "Resolve ambiguity between product goals, infrastructure constraints, delivery pressure, and revenue consequences.",
+      "Make product goals, infrastructure limits, delivery pressure, and revenue consequences visible in the same decision.",
   },
   {
     title: "Lead reliability and change",
@@ -31,7 +36,7 @@ const principalScope = [
   {
     title: "Validate in the code",
     description:
-      "Stay close to critical paths, mentor senior engineers, and test whether the architecture survives implementation.",
+      "Stay close to critical paths, mentor senior engineers, and use implementation feedback before assumptions harden.",
   },
 ] as const;
 
@@ -42,17 +47,17 @@ export function PortfolioHome() {
         <section className="grid items-end gap-12 border-b border-zinc-200 pb-16 dark:border-zinc-700/60 lg:grid-cols-[1.25fr_0.75fr] lg:gap-20 lg:pb-24">
           <div>
             <SectionLabel className="tracking-[0.22em]">
-              Flick · Principal Architect
+              John Dean / Flick · Principal Architect
             </SectionLabel>
             <h1 className="mt-6 max-w-4xl text-balance text-5xl font-semibold tracking-[-0.045em] text-zinc-900 sm:text-6xl lg:text-7xl dark:text-white">
               Turning emerging platforms into production systems.
             </h1>
             <p className="mt-8 max-w-2xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-              I move into new platforms, learn the hard constraints, and ship.
-              The path runs from embedded systems and early smartphones through
-              streaming, cloud and MLOps, revenue-critical monetization, Web3,
-              and production AI agents. I stay close enough to the code to know
-              when the architecture is lying.
+              I’m John Dean, known online as Flick and 0xFlicker. I’m a
+              Principal Architect at GIPHY with 25+ years building and operating
+              systems across developer tools, consumer products, cloud
+              platforms, MLOps, monetization, and AI agents. I stay close enough
+              to the code to know when the architecture is lying.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Button href="/~/projects">View selected work</Button>
@@ -105,7 +110,7 @@ export function PortfolioHome() {
                 </li>
               ))}
             </ol>
-            <ArrowLink href="/~/projects#the-house">
+            <ArrowLink href={`/~/projects#${selectedWorkIds.theHouse}`}>
               Read about The House
             </ArrowLink>
           </aside>
@@ -117,24 +122,20 @@ export function PortfolioHome() {
         <section aria-labelledby="principal-scope-heading">
           <div className="grid gap-8 lg:grid-cols-[0.7fr_1.3fr] lg:gap-20">
             <div>
-              <SectionLabel>Current Principal scope</SectionLabel>
+              <SectionLabel>Principal Architect · GIPHY</SectionLabel>
               <h2
                 id="principal-scope-heading"
                 className="mt-4 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white"
               >
-                Monetization is architecture with a revenue consequence.
+                Technical direction for a mature consumer platform.
               </h2>
             </div>
             <div>
               <p className="text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-                I lead architecture across mature consumer, advertising, and
-                platform systems. The work is cross-team by nature: product
-                behavior, infrastructure, reliability, cost, partner surfaces,
-                and business outcomes all shape the design.
-              </p>
-              <p className="mt-4 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-                Selected employer work is described in generalized terms to
-                respect confidentiality.
+                At GIPHY, I set technical direction across monetization,
+                advertising, search, content delivery, partner, API, and
+                platform systems. Reliability, infrastructure cost, delivery,
+                and product behavior all shape the work.
               </p>
             </div>
           </div>
@@ -268,8 +269,11 @@ export function PortfolioHome() {
             </p>
             <div className="mt-8 flex flex-wrap gap-x-8 gap-y-4">
               <ArrowLink href="/~/about">Read the full story</ArrowLink>
-              <ArrowLink href="https://github.com/0xflicker">
+              <ArrowLink href={profileLinks.github}>
                 Open-source work as 0xFlicker
+              </ArrowLink>
+              <ArrowLink href={profileLinks.originalGithub}>
+                Earlier work as CaptEmulation
               </ArrowLink>
             </div>
           </div>
@@ -283,12 +287,12 @@ export function PortfolioHome() {
               What’s next
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Need architecture that can survive production?
+              Looking for a hands-on Principal engineer?
             </h2>
             <p className="mt-5 leading-7 text-brand-light/80 dark:text-brand-dark/80">
-              I’m open to Principal Architect, Principal Engineer, and Staff+
-              roles, plus selected advisory work where hands-on systems judgment
-              matters.
+              I’m based in Colorado and open to remote Principal and Staff+
+              roles focused on production AI, developer platforms, distributed
+              systems, and technically difficult products.
             </p>
           </div>
           <div className="mt-8 flex flex-wrap gap-5 lg:mt-0 lg:flex-col lg:items-start">

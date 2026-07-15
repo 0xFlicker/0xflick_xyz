@@ -177,7 +177,7 @@ export default function ProjectArchive() {
                     rel="noopener noreferrer"
                     className="text-zinc-700 underline decoration-zinc-300 underline-offset-4 transition hover:text-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-dark dark:text-zinc-200 dark:decoration-zinc-600 dark:hover:text-brand-light dark:focus-visible:outline-brand-light"
                   >
-                    Source
+                    View {project.title} source on GitHub
                   </Link>
                 )}
                 <Link
@@ -186,7 +186,7 @@ export default function ProjectArchive() {
                   rel="noopener noreferrer"
                   className="text-zinc-500 underline decoration-zinc-300 underline-offset-4 transition hover:text-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-dark dark:text-zinc-400 dark:decoration-zinc-600 dark:hover:text-brand-light dark:focus-visible:outline-brand-light"
                 >
-                  Public preview
+                  Open {project.title} public preview
                 </Link>
               </div>
             </div>

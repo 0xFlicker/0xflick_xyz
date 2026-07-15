@@ -64,7 +64,7 @@ export default function OpenGraphImage() {
             width: 150,
           }}
         >
-          {siteName[0]}
+          F
         </div>
       </div>
     ),
