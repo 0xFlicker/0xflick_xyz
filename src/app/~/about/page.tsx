@@ -5,20 +5,17 @@ import clsx from "clsx";
 import { Button } from "@/components/Button";
 import { Container } from "@/components/Container";
 import { SectionLabel } from "@/components/PortfolioUI";
-import {
-  FarcasterIcon,
-  GitHubIcon,
-  TelegramIcon,
-  XIcon,
-} from "@/components/SocialIcons";
-import portraitImage from "@/images/nfts/flick-cp.png";
+import { GitHubIcon, XIcon } from "@/components/SocialIcons";
+import markImage from "@/images/avatar.png";
+import { createPageMetadata } from "@/lib/site";
 import { FlickImage } from "./FlickImage";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "About",
   description:
-    "Flick is a Principal engineer and systems architect working across AI platforms, product systems, and production infrastructure.",
-};
+    "How Flick leads: technical direction, cross-team architecture, operational ownership, mentorship, and hands-on production engineering.",
+  path: "/~/about",
+});
 
 function MailIcon(props: React.ComponentPropsWithoutRef<"svg">) {
   return (
@@ -59,24 +56,57 @@ function SocialLink({
 
 const careerArc = [
   {
-    era: "Embedded + mobile",
+    era: "Embedded systems",
     description:
-      "Factory and SDK testing, smartphone tools, and client mobile systems taught me to respect hardware, constrained runtimes, and developer ergonomics.",
+      "Factory and SDK testing taught me to respect hardware, constrained runtimes, failure modes, and the people using the tools.",
   },
   {
-    era: "Consumer + streaming",
+    era: "Smartphones + mobile",
     description:
-      "Interactive television, online video, multiplayer experiences, and creative tools moved the work toward products with visible user and performance consequences.",
+      "Early smartphone tools and client mobile systems made developer ergonomics, portability, and platform change part of the daily work.",
   },
   {
-    era: "Cloud + platforms",
+    era: "Streaming + consumer",
     description:
-      "ML operations, internet-scale media, Kubernetes, CI/CD, observability, and on-call ownership made operability part of the architecture—not a handoff.",
+      "Interactive television, online video, multiplayer experiences, and creative products brought visible customer, performance, and revenue consequences.",
   },
   {
-    era: "Agents + independent systems",
+    era: "Cloud + MLOps",
     description:
-      "The current chapter combines agent orchestration, MCP, permissions, multiplayer runtimes, developer tools, and product delivery in production systems.",
+      "Cloud platforms, MLOps, Kubernetes, CI/CD, observability, and on-call ownership made operability part of the architecture - not a handoff.",
+  },
+  {
+    era: "Web3 + AI agents",
+    description:
+      "Adversarial public systems sharpened trust boundaries; production agent platforms now combine identity, permissions, durable state, multiplayer orchestration, and developer tools.",
+  },
+] as const;
+
+const leadershipPractice = [
+  {
+    title: "Technical direction",
+    description:
+      "Turn an ambiguous goal into boundaries, standards, sequencing, and decisions the team can actually build against.",
+  },
+  {
+    title: "Cross-team architecture",
+    description:
+      "Align product, infrastructure, security, operations, and business constraints before they become production archaeology.",
+  },
+  {
+    title: "Mentorship + design review",
+    description:
+      "Review designs, challenge hidden assumptions, and unblock senior engineers without becoming a human approval queue.",
+  },
+  {
+    title: "Operational ownership",
+    description:
+      "Treat reliability, observability, incident learning, migration safety, and cost as architectural inputs from the start.",
+  },
+  {
+    title: "Hands-on validation",
+    description:
+      "Write or review critical implementation paths when that is the fastest way to test the design and reduce risk.",
   },
 ] as const;
 
@@ -91,9 +121,9 @@ export default function AboutPage() {
           I move into new platforms, learn the hard constraints, and ship.
         </h1>
         <p className="mt-7 max-w-3xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-          I’m a Principal engineer and systems architect focused on AI systems,
-          developer platforms, product infrastructure, and the operational work
-          that makes software trustworthy after launch.
+          I’m a Principal Architect and hands-on engineering leader focused on
+          production AI systems, platforms and distributed systems, developer
+          experience, and revenue-critical consumer products.
         </p>
       </header>
 
@@ -108,7 +138,7 @@ export default function AboutPage() {
             </h2>
             <div className="mt-7 space-y-6 text-base leading-7 text-zinc-600 dark:text-zinc-300">
               <p>
-                Over roughly 25 years, the visible layer of my work has changed
+                Over more than 25 years, the visible layer of my work has changed
                 repeatedly: embedded boards, smartphones, streaming devices,
                 consumer web products, cloud platforms, machine-learning
                 operations, smart contracts, and AI agents.
@@ -163,18 +193,38 @@ export default function AboutPage() {
             </ol>
           </section>
 
-          <section className="mt-20 border-l-2 border-brand-dark pl-6 dark:border-brand-light sm:pl-8">
-            <SectionLabel>How I work</SectionLabel>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white">
-              Hands-on, systems-minded, product-aware.
+          <section className="mt-20" aria-labelledby="leadership-heading">
+            <SectionLabel>How I lead</SectionLabel>
+            <h2
+              id="leadership-heading"
+              className="mt-4 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white"
+            >
+              Make the direction clear. Keep the feedback loop honest.
             </h2>
             <p className="mt-5 leading-7 text-zinc-600 dark:text-zinc-300">
-              I’m most useful when a problem crosses layers or when a team needs
-              a technical direction that can survive implementation. I can set
-              architecture, write the critical path, improve the platform under
-              it, and help other engineers move faster without hiding complexity
-              behind a cursed abstraction.
+              Principal work is organizational leverage expressed through
+              technical judgment. I’m most useful when a problem crosses teams
+              or layers and the architecture needs to survive implementation,
+              operations, and business reality.
             </p>
+            <div className="mt-9 grid border-y border-zinc-200 dark:border-zinc-700/60 sm:grid-cols-2">
+              {leadershipPractice.map((item, index) => (
+                <article
+                  key={item.title}
+                  className="border-zinc-200 py-6 sm:px-6 sm:[&:nth-child(even)]:border-l sm:[&:nth-child(n+3)]:border-t sm:first:pl-0 dark:border-zinc-700/60"
+                >
+                  <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
+                    0{index + 1}
+                  </span>
+                  <h3 className="mt-3 font-semibold text-zinc-900 dark:text-zinc-100">
+                    {item.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                    {item.description}
+                  </p>
+                </article>
+              ))}
+            </div>
             <div className="mt-8 flex flex-wrap gap-4">
               <Button href="/~/projects">View selected work</Button>
               <Button variant="secondary" href="/connect">
@@ -187,22 +237,21 @@ export default function AboutPage() {
         <aside>
           <div className="lg:sticky lg:top-28">
             <FlickImage
-              src={portraitImage}
-              alt="Illustrated portrait of Flick"
+              src={markImage}
+              alt="Flick gold hand mark"
               sizes="(min-width: 1024px) 24rem, 20rem"
               className="w-full max-w-sm"
             />
 
             <section className="mt-10 border-t-2 border-brand-dark pt-7 dark:border-brand-light">
-              <SectionLabel>0xFlicker</SectionLabel>
+              <SectionLabel>Secondary identity</SectionLabel>
               <h2 className="mt-3 text-xl font-semibold text-zinc-900 dark:text-white">
-                An established publishing identity.
+                Open-source work as 0xFlicker.
               </h2>
               <p className="mt-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                Much of my recent experimental and open-source work is published
-                as 0xFlicker: AI agents, crypto infrastructure, distributed
-                systems, identity, and independent products. The name is
-                different; the engineering throughline is the same.
+                Recent experiments in AI agents, crypto infrastructure,
+                distributed systems, and independent products are published
+                under that name. flick.ing is the professional home.
               </p>
             </section>
 
@@ -213,14 +262,8 @@ export default function AboutPage() {
               <SocialLink href="https://x.com/0xflick" icon={XIcon}>
                 X / 0xFlick
               </SocialLink>
-              <SocialLink href="https://warpcast.com/flick" icon={FarcasterIcon}>
-                Farcaster / flick
-              </SocialLink>
-              <SocialLink href="https://t.me/flick_the_dev" icon={TelegramIcon}>
-                Telegram / flick_the_dev
-              </SocialLink>
               <SocialLink href="mailto:me@0xflick.xyz" icon={MailIcon}>
-                me@0xflick.xyz
+                Email Flick
               </SocialLink>
             </ul>
           </div>

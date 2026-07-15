@@ -3,11 +3,14 @@ import isMobile from "is-mobile";
 import { headers } from "next/headers";
 
 import Home from "@/features/home/index";
+import { createPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Interactive intro",
-  description: "The original interactive WebGL introduction to flick.ing.",
-};
+  description:
+    "The original flick.ing WebGL introduction, preserved as an interactive design artifact.",
+  path: "/intro",
+});
 
 export default function IntroPage() {
   const headerList = headers();

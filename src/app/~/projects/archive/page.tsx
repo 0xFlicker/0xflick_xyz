@@ -3,26 +3,30 @@ import Link from "next/link";
 
 import { Container } from "@/components/Container";
 import { SectionLabel } from "@/components/PortfolioUI";
+import { createPageMetadata } from "@/lib/site";
 import ProjectArchive from "../Home";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Project archive",
   description:
-    "The preserved archive of experiments and independent projects published by Flick.",
-};
+    "Internal project records for Flick's maintained, experimental, and archived independent work.",
+  path: "/~/projects/archive",
+});
 
 export default function ProjectArchivePage() {
   return (
     <>
       <Container className="mt-16 sm:mt-28">
         <div className="max-w-3xl">
-          <SectionLabel>Preserved project archive</SectionLabel>
+          <SectionLabel>Project archive</SectionLabel>
           <h1 className="mt-5 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl dark:text-white">
-            Experiments, tools, and on-chain work.
+            Technical records, not a link graveyard.
           </h1>
           <p className="mt-6 leading-7 text-zinc-600 dark:text-zinc-300">
-            This is the original project collection, kept intact while the main
-            work page moves toward a smaller set of deeper system stories.
+            Each entry documents the role, engineering challenge, status, and
+            technical shape before offering a source or public preview. Links
+            were checked in July 2026; a responding URL does not imply an
+            archived experiment is still maintained.
           </p>
           <Link
             href="/~/projects"

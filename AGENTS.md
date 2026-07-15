@@ -2,7 +2,7 @@
 
 ## Overview
 
-`0xflick_xyz` is a personal portfolio website for Flick (0xflick), built with Next.js 14 App Router, React 18, TypeScript, and TailwindCSS. The homepage features an interactive Three.js WebGL animation, with content pages for about, projects, resume, and a connect/scheduling page. Production URL: https://www.flick.ing
+`0xflick_xyz` is Flick's Principal Architect portfolio, built with Next.js 14 App Router, React 18, TypeScript, and TailwindCSS. The editorial homepage leads into about, selected systems, experience, and connect pages; the original interactive Three.js experience remains available at `/intro`. Production URL: https://www.flick.ing
 
 ## Local Setup
 
@@ -24,7 +24,8 @@
 ### Routing
 
 - **App Router only** — all routes live under `src/app/`.
-- `/` — WebGL Three.js landing page (full-screen canvas). Falls back to `/~/about` when WebGL is unsupported.
+- `/` — editorial Principal Architect homepage focused on positioning, proof, selected systems, and conversion.
+- `/intro` — original full-screen WebGL Three.js experience. Falls back to `/~/about` when WebGL is unsupported.
 - `/~/about`, `/~/projects`, `/~/cv` — content pages wrapped in a shared layout (`src/app/~/layout.tsx`) that provides the `<Header>`, `<Footer>`, theme provider, and navigation context.
 - `/connect` — standalone page for scheduling intro calls, uses its own layout.
 
@@ -33,12 +34,12 @@ The tilde (`~`) prefix in the route path is intentional — it namespaces the po
 ### Directory Structure
 
 - `src/app/` — Next.js App Router pages and layouts.
-- `src/components/` — Shared, reusable UI components (`Header`, `Footer`, `Container`, `Button`, `Card`, `SimpleLayout`, `SocialIcons`, etc.).
+- `src/components/` — Shared, reusable UI components (`Header`, `Footer`, `Container`, `Button`, `SiteShell`, `PortfolioHome`, `PortfolioUI`, `SocialIcons`, etc.).
 - `src/components/three/` — Reusable react-three-fiber components (`Animatable`, `Chevron`, `FitToWidth`, `GridRect`, `GridTunnel`, `ScrollAnimatable`).
-- `src/features/home/` — Homepage WebGL experience: Three.js canvas, animation tracks, GLSL shaders, and content overlays.
+- `src/features/home/` — WebGL intro experience: Three.js canvas, animation tracks, GLSL shaders, and content overlays.
 - `src/hooks/` — Shared React hooks (`useDetectWebgl`, `useNavigationEvent`, `useScroll`).
 - `src/shader/` — GLSL shader utilities (`grid`, `outline`).
-- `src/lib/` — Utility helpers (`articles`, `formatDate`).
+- `src/lib/` — Content, navigation, metadata, and utility helpers (`portfolio`, `navigation`, `site`, `articles`, `formatDate`).
 - `src/styles/` — Global styles and Tailwind entry point.
 - `src/images/` — Static image assets imported by components.
 - `public/` — Public static assets (project screenshots, PDFs, favicons).

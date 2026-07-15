@@ -3,12 +3,14 @@ import Link from "next/link";
 
 import { Button } from "@/components/Button";
 import { Container } from "@/components/Container";
+import { createPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Let’s talk",
+export const metadata: Metadata = createPageMetadata({
+  title: "Connect",
   description:
-    "Schedule a 30-minute call with Flick to discuss engineering leadership, AI systems, and platform work.",
-};
+    "Connect with Flick about Principal Architect and Staff+ roles or selected advisory work in AI, platforms, distributed systems, developer experience, and monetization.",
+  path: "/connect",
+});
 
 export default function ConnectPage() {
   return (
@@ -18,62 +20,57 @@ export default function ConnectPage() {
           Let’s talk
         </h1>
         <p className="mt-6 text-base text-zinc-600 dark:text-zinc-400">
-          If you are hiring a Principal or Staff+ engineer who can connect
-          product outcomes to platform execution, this is the right place to
-          start. I focus on AI systems, pragmatic delivery, durable
-          architecture, and the operations that make software sustainable.
+          If you need a Principal Architect who can connect product outcomes to
+          platform execution - and stay close enough to implementation to keep
+          the design honest - this is the right place to start.
         </p>
       </div>
       <div className="mt-12 grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
         <div className="space-y-10">
           <section className="space-y-4 rounded-2xl border border-brand-dark p-6 dark:border-brand-light">
-            <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">
-              Good fit if you’re…
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-dark dark:text-brand-light">
+              Full-time leadership roles
+            </p>
+            <h2 className="text-xl font-semibold text-zinc-800 dark:text-zinc-100">
+              Principal scope with an implementation feedback loop
             </h2>
             <ul className="list-disc space-y-2 pl-5 text-base text-zinc-600 dark:text-zinc-400">
-              <li>
-                Hiring a Principal or Staff+ engineer who can own systems
-                end-to-end
-              </li>
-              <li>
-                Scaling a product/platform and need reliability + velocity
-              </li>
-              <li>
-                Building AI platforms or agent infrastructure beyond the demo
-                stage
-              </li>
+              <li>Principal Engineer or Principal Architect</li>
+              <li>Staff+ engineering and hands-on architecture leadership</li>
+              <li>Production AI and agent platforms</li>
+              <li>Platforms, distributed systems, and developer experience</li>
+              <li>Monetization and large-scale consumer systems</li>
             </ul>
           </section>
           <section className="space-y-4 rounded-2xl border border-brand-dark p-6 dark:border-brand-light">
-            <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">
-              I can help with…
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-dark dark:text-brand-light">
+              Selected advisory work
+            </p>
+            <h2 className="text-xl font-semibold text-zinc-800 dark:text-zinc-100">
+              A focused intervention, not consultancy theater
             </h2>
             <ul className="list-disc space-y-2 pl-5 text-base text-zinc-600 dark:text-zinc-400">
-              <li>
-                Platform engineering &amp; developer enablement (tooling, CI/CD,
-                golden paths)
-              </li>
-              <li>Performance/reliability/observability programs</li>
-              <li>
-                Monetization + ads infrastructure (decisioning, experimentation,
-                measurement)
-              </li>
-              <li>
-                Shipping AI-enabled product features with clear permissions,
-                evaluation surfaces, and operations
-              </li>
+              <li>Architecture and design reviews</li>
+              <li>Agent-system design and permission boundaries</li>
+              <li>Platform, migration, and reliability programs</li>
+              <li>Developer experience and delivery systems</li>
+              <li>Monetization and advertising infrastructure</li>
             </ul>
           </section>
           <section className="space-y-3 text-sm text-zinc-500 dark:text-zinc-400">
             <h2 className="text-base font-semibold text-zinc-700 dark:text-zinc-200">
               Not a fit
             </h2>
-            <p>Pure research roles with no product/engineering component.</p>
+            <p>
+              Pure research roles with no product or engineering ownership,
+              hands-off architecture roles, and engagements that need a slide
+              deck more than a working system.
+            </p>
           </section>
         </div>
         <aside className="rounded-2xl border border-brand-dark p-6 shadow-sm dark:border-brand-light dark:bg-zinc-900/70">
           <h2 className="text-xl font-semibold text-zinc-800 dark:text-zinc-100">
-            30-minute intro
+            Start with 30 minutes
           </h2>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-base text-zinc-600 dark:text-zinc-400">
             <li>Goals and outcomes for the role or project</li>
@@ -93,13 +90,14 @@ export default function ConnectPage() {
             </Button>
           </div>
           <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
-            If helpful, send a short role blurb or problem statement ahead of
-            time.
+            flick.ing is the professional home. If helpful, send a short role
+            brief or system problem ahead of time.
           </p>
         </aside>
       </div>
       <p className="mt-12 text-sm text-zinc-500 dark:text-zinc-400">
-        Based in Colorado (MT). Remote-friendly.
+        Based in Colorado (Mountain Time). Remote-friendly; Colorado-based
+        hybrid conversations are welcome.
       </p>
       <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
         Prefer to explore first?{" "}
