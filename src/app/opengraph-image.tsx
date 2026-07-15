@@ -1,12 +1,26 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { ImageResponse } from "next/og";
 
-import { professionalTitle, siteName, siteTitle } from "@/lib/site";
+import {
+  professionalTitle,
+  siteName,
+  siteTitle,
+  siteUrl,
+} from "@/lib/site";
 
+const flickMarkUrl = new URL(
+  "/flick.png",
+  process.env.OG_URL ?? siteUrl
+).toString();
+
+export const dynamic = "force-dynamic";
 export const alt = `${siteTitle} turning emerging platforms into production systems`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default function OpenGraphImage() {
+  noStore();
+
   return new ImageResponse(
     (
       <div
@@ -61,10 +75,19 @@ export default function OpenGraphImage() {
             fontWeight: 700,
             height: 150,
             justifyContent: "center",
+            overflow: "hidden",
             width: 150,
           }}
         >
-          F
+          {/* next/image is not supported inside ImageResponse. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt=""
+            height="112"
+            src={flickMarkUrl}
+            style={{ objectFit: "contain" }}
+            width="112"
+          />
         </div>
       </div>
     ),
