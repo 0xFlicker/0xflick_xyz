@@ -12,14 +12,6 @@ const systemFlow = [
   ["04", "Operations", "Infrastructure and observability"],
 ] as const;
 
-const proofPoints = [
-  ["25+ years", "Production engineering"],
-  ["Principal Architect", "Hands-on technical leadership"],
-  ["Embedded → agents", "Multiple platform generations"],
-  ["Revenue-critical", "Consumer + monetization systems"],
-  ["The House", "Creator and system owner"],
-] as const;
-
 const principalScope = [
   {
     title: "Set technical direction",
@@ -120,26 +112,6 @@ export function PortfolioHome() {
         </section>
       </Container>
 
-      <Container className="mt-8 sm:mt-12">
-        <section aria-label="Professional proof" className="border-y border-zinc-200 dark:border-zinc-700/60">
-          <dl className="grid sm:grid-cols-2 lg:grid-cols-5">
-            {proofPoints.map(([proof, context], index) => (
-              <div
-                key={proof}
-                className="border-zinc-200 py-5 sm:px-5 sm:[&:nth-child(even)]:border-l lg:border-l lg:first:border-l-0 dark:border-zinc-700/60"
-              >
-                <dt className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  {proof}
-                </dt>
-                <dd className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  {context}
-                </dd>
-                <span className="sr-only">Proof point {index + 1}</span>
-              </div>
-            ))}
-          </dl>
-        </section>
-      </Container>
 
       <Container className="mt-20 sm:mt-28">
         <section aria-labelledby="principal-scope-heading">
