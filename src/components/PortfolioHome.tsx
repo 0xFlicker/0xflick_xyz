@@ -26,7 +26,7 @@ const principalScope = [
   {
     title: "Protect trust while targeting",
     description:
-      "Use ethically sourced data and treat privacy regulation as a system constraint, not a post-launch disclaimer.",
+      "Use legally sourced data and treat privacy regulation as a system constraint, not a post-launch disclaimer.",
   },
   {
     title: "Lead reliability and change",
