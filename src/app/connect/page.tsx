@@ -21,7 +21,7 @@ export default function ConnectPage() {
         </h1>
         <p className="mt-6 text-base text-zinc-600 dark:text-zinc-400">
           I’m exploring remote Principal and Staff+ engineering roles focused
-          on production AI systems, developer platforms, distributed systems,
+          on production AI systems, distributed systems,
           and technically difficult products.
         </p>
       </div>

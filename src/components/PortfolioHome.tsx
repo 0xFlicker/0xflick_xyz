@@ -292,9 +292,7 @@ export function PortfolioHome() {
               Looking for a hands-on Principal engineer?
             </h2>
             <p className="mt-5 leading-7 text-brand-light/80 dark:text-brand-dark/80">
-              I’m based in Colorado and open to remote Principal and Staff+
-              roles focused on production AI, developer platforms, distributed
-              systems, and technically difficult products.
+              I’m based in Colorado and exploring remote Principal and Staff+ engineering roles focused on production AI systems, distributed systems, and technically difficult products.
             </p>
           </div>
           <div className="mt-8 flex flex-wrap gap-5 lg:mt-0 lg:flex-col lg:items-start">
