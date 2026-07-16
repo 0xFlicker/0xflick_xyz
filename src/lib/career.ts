@@ -2,9 +2,8 @@ export type CareerRole = {
   id: CareerRoleId;
   company: string;
   productOrTeam?: string;
-  displayTitle: string;
-  officialTitle?: string;
-  internalLevel?: string;
+  displayTitle?: string;
+  roleContext?: string;
   start: string;
   end?: string;
   location?: string;
@@ -37,20 +36,23 @@ export const careerRoles = [
     start: "2024",
     location: "Colorado / Remote",
     summary:
-      "Set technical direction across GIPHY’s monetization, advertising, search, delivery, partner, and platform systems, balancing product goals with reliability, infrastructure cost, and the constraints of a mature high-traffic product.",
+      "Set technical direction across GIPHY’s monetization, advertising, search, delivery, partner, and platform systems. Led architecture and implementation for multi-partner advertising networks and privacy-conscious targeting, balancing revenue growth with regulatory requirements, user trust, reliability, and infrastructure cost.",
     responsibilities: [
-      "Architecture across advertising, monetization, search, content delivery, consumer, partner, API, and integration surfaces.",
-      "Design review, migrations, reliability work, incident learning, and operational ownership.",
-      "Hands-on validation of critical implementation paths.",
+      "Led architecture and implementation for advertising networks spanning multiple subsystems and partner sales channels.",
+      "Introduced privacy-conscious targeting built on ethically sourced data and designed around applicable global privacy regulations.",
+      "Design review, migrations, reliability work, incident learning, and cost-aware operational ownership.",
+    ],
+    outcomes: [
+      "Built monetization systems that materially increased revenue and strengthened GIPHY’s ability to sustain the product.",
+      "Expanded advertising capability while preserving user trust and regulatory compliance as product requirements.",
     ],
     publicSafe: true,
     sourceNotes: [
       "The Principal title begins with the move to GIPHY in 2024 and must not be backdated.",
+      "The verified revenue amount is approved for the private résumé PDF only; keep public surfaces qualitative.",
     ],
     needsVerification: [
       "Exact month of the 2024 move.",
-      "Confirm Principal Architect as the exact HR title.",
-      "Public-safe, verified outcomes for GIPHY monetization work.",
     ],
   },
   {
@@ -62,58 +64,53 @@ export const careerRoles = [
     end: "2024",
     location: "Colorado / Remote",
     summary:
-      "Rejoined Shutterstock following the PicMonkey acquisition to help integrate and evolve the company’s browser-based creative platform. Helped deliver Shutterstock Create and transition away from the earlier Shutterstock Editor while working across product engineering, cloud infrastructure, Kubernetes, deployment, and production support.",
+      "Rejoined Shutterstock following the PicMonkey acquisition to help integrate and evolve the company’s browser-based creative platform. Helped deliver Shutterstock Create, contributed to the team that created Shutterstock’s first AI image-editing tool, and helped transition away from the earlier Shutterstock Editor while working across product engineering, cloud infrastructure, Kubernetes, deployment, and production support.",
     responsibilities: [
       "Product engineering for browser-based creative tooling.",
       "Cloud infrastructure, Kubernetes, delivery, and production operations.",
     ],
     outcomes: [
       "Helped deliver Shutterstock Create.",
+      "Contributed to the team that created Shutterstock’s first AI image-editing tool.",
       "Helped transition away from and retire the earlier Shutterstock Editor platform.",
     ],
     publicSafe: true,
     needsVerification: [
-      "Exact official title for the 2022 return.",
       "Exact month of the 2022 return.",
-      "Public-safe, verified outcomes for Shutterstock Create.",
     ],
   },
   {
     id: "verta-2020",
     company: "Verta",
     productOrTeam: "Enterprise MLOps and model management",
-    displayTitle: "Frontend Lead",
-    officialTitle: "Webmaster",
+    roleContext: "Employee #6",
     start: "2020",
     end: "2022",
     summary:
-      "Took over customer-facing product and frontend ownership from the CTO for an enterprise MLOps platform. Led three frontend contractors and worked across React, GraphQL, release engineering, CI/CD, enterprise integrations, customer support, and production on-call.",
+      "As employee #6, owned everything that touched the browser for an enterprise MLOps platform. Took over customer-facing product and web ownership from the CTO, led three frontend contractors, and worked across React, GraphQL, release engineering, CI/CD, enterprise integrations, customer support, and production on-call.",
     responsibilities: [
-      "Owned the React and GraphQL web stack and implemented product features and GraphQL resolvers.",
+      "Owned every browser-facing surface end to end, from the React frontend through GraphQL resolvers and backend API integrations.",
       "Led three overseas frontend contractors.",
       "Maintained tests, builds, releases, operations integrations, and customer delivery for the web stack.",
     ],
     publicSafe: true,
     sourceNotes: [
-      "Frontend Lead is the approved functional title; Webmaster is preserved as the historical official title.",
+      "Verta did not use formal titles for this role; describe the employee number and ownership instead of inventing a title.",
     ],
-    needsVerification: [
-      "Whether public surfaces should show Frontend Lead, Webmaster, or both.",
-      "Public-safe, verified product outcomes.",
-    ],
+    needsVerification: ["Public-safe, verified product outcomes."],
   },
   {
     id: "sandbox-vr-2019",
     company: "Sandbox VR",
-    productOrTeam: "Location-based multiplayer VR platform",
-    displayTitle: "Web Tech Lead",
-    officialTitle: "Senior Developer",
+    productOrTeam: "Cloud systems for a location-based multiplayer VR platform",
+    roleContext: "US salaried technical employee #4",
     start: "July 2019",
     end: "April 2020",
     summary:
-      "Owned major parts of the web platform supporting Sandbox VR’s live multiplayer venues, including global leaderboards, scheduling, payments, experimentation, deployment, and operational support. The role ended when the location-based business shut down during the COVID-19 pandemic.",
+      "As US salaried technical employee #4, was hired to lead Sandbox VR’s cloud systems: everything outside the game servers running in stores. Owned architecture, delivery, and operations across the web product, booking, subscriptions, global leaderboards, marketing systems, deployment, and production support. The role ended when the location-based business shut down during the COVID-19 pandemic.",
     responsibilities: [
-      "Web product delivery across scheduling, payments, leaderboards, experimentation, and social sharing.",
+      "Led the cloud platform outside the game servers running at store locations.",
+      "Owned web, booking, subscriptions, global leaderboards, and marketing systems.",
       "Builds, deployments, and 24/7 production on-call for online services.",
     ],
     technologies: [
@@ -128,10 +125,7 @@ export const careerRoles = [
     ],
     publicSafe: true,
     sourceNotes: [
-      "Web Tech Lead is the approved functional title; Senior Developer is preserved as the historical official title.",
-    ],
-    needsVerification: [
-      "Whether public surfaces should show Web Tech Lead, Senior Developer, or both.",
+      "Sandbox VR did not use a formal title for this role; describe the employee number and cloud-systems scope instead of inventing a title.",
     ],
   },
   {
@@ -139,7 +133,6 @@ export const careerRoles = [
     company: "Shutterstock",
     productOrTeam: "Shutterstock Editor and core marketplace",
     displayTitle: "Software Developer",
-    officialTitle: "Senior Developer",
     start: "November 2015",
     end: "July 2019",
     summary:
@@ -150,9 +143,6 @@ export const careerRoles = [
       "Rotating 24/7 production on-call.",
     ],
     publicSafe: true,
-    sourceNotes: [
-      "Software Developer is the approved generic public display title; Senior Developer is preserved as the historical résumé title.",
-    ],
     needsVerification: [
       "Public-safe, verified outcomes for Editor and its partner SDK.",
     ],
@@ -162,7 +152,6 @@ export const careerRoles = [
     company: "Time Warner Cable",
     productOrTeam: "Consumer Technology Group · Multi-room HTML5 DVR",
     displayTitle: "Senior Developer / Feature Technical Lead",
-    officialTitle: "Senior Developer",
     start: "November 2013",
     end: "November 2015",
     summary:
@@ -188,7 +177,6 @@ export const careerRoles = [
       "Designed a .NET WCF service to transform and securely serve operational data.",
     ],
     publicSafe: true,
-    needsVerification: ["Exact official title or title sequence at Accenture."],
   },
   {
     id: "nokia-2005",
@@ -239,6 +227,14 @@ export function getCareerRole(id: CareerRoleId): CareerRole {
     throw new Error(`Unknown career role: ${id}`);
   }
   return role;
+}
+
+export function getCareerRoleLabel(role: CareerRole) {
+  const label = role.displayTitle ?? role.roleContext;
+  if (!label) {
+    throw new Error(`Career role ${role.id} has no display title or role context`);
+  }
+  return label;
 }
 
 export function formatCareerDateRange(role: CareerRole) {

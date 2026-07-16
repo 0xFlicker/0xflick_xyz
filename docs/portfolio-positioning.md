@@ -22,13 +22,13 @@ John is not positioned as a model researcher, pure people manager, consultant, c
 
 1. GIPHY — Principal Architect — 2024–Present
 2. Shutterstock — Software Engineer — 2022–2024
-3. Verta — Frontend Lead — 2020–2022
-4. Sandbox VR — Web Tech Lead — 2019–2020
+3. Verta — employee #6; owned everything that touched the browser — 2020–2022
+4. Sandbox VR — US salaried technical employee #4; led cloud systems — 2019–2020
 5. Shutterstock — Software Developer — 2015–2019
 6. Time Warner Cable, Accenture, Nokia, and Metrowerks / Motorola / Freescale
 7. The University of Texas at Austin — B.S. Computer Engineering
 
-The Principal title begins at GIPHY in 2024. The two Shutterstock tenures remain visibly separate. Functional and official-title differences are preserved in `src/lib/career.ts` and explained in `docs/career-facts.md`.
+The Principal title begins at GIPHY in 2024. The two Shutterstock tenures remain visibly separate. Verta and Sandbox VR did not use formal titles for these roles, so `src/lib/career.ts` records employee number and actual ownership instead of manufacturing title history.
 
 ## Evidence order
 
@@ -59,7 +59,7 @@ The three recurring lines retained across the site are:
 
 ## Public-safety rule
 
-Employer descriptions name public companies, products, and approved titles while omitting private architecture, metrics, customers, partners, pricing, revenue, incidents, roadmaps, internal repositories, strategy, and staffing details. The historical résumé and its private contact details are not public artifacts.
+Employer descriptions name public companies, products, and approved titles while omitting private architecture, metrics, customers, partners, pricing, incidents, roadmaps, internal repositories, strategy, and staffing details. Public GIPHY copy may describe the verified revenue impact qualitatively; the approved amount remains confined to the locally generated résumé PDF. Historical private contact details are not public artifacts.
 
 ## Source of truth
 

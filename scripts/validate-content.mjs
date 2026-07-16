@@ -3,7 +3,7 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 
-const ignoredDirectories = new Set([".git", ".next", "node_modules"]);
+const ignoredDirectories = new Set([".git", ".next", "node_modules", "output"]);
 const publicTextExtensions = new Set([
   ".cjs",
   ".css",
@@ -192,9 +192,24 @@ export function validateStableCareerRecords(careerSource) {
       id: "shutterstock-2015",
       company: "Shutterstock",
       displayTitle: "Software Developer",
-      officialTitle: "Senior Developer",
       start: "November 2015",
       end: "July 2019",
+    },
+    {
+      id: "verta-2020",
+      company: "Verta",
+      displayTitle: undefined,
+      roleContext: "Employee #6",
+      start: "2020",
+      end: "2022",
+    },
+    {
+      id: "sandbox-vr-2019",
+      company: "Sandbox VR",
+      displayTitle: undefined,
+      roleContext: "US salaried technical employee #4",
+      start: "July 2019",
+      end: "April 2020",
     },
   ];
 
@@ -260,10 +275,19 @@ export async function validateContent(root = process.cwd()) {
     [/Employer anonymized/i, "An anonymized employer label remains"],
     [/soapbubble\.online/i, "The lost Soap Bubble domain remains"],
     [/\bTelegram\b/i, "Telegram is still presented"],
+    [/\bofficialTitle\b/, "The removed official-title field remains"],
+    [
+      /historical\s+(?:official\s+|résumé\s+|resume\s+)?title/i,
+      "A removed historical-title annotation remains",
+    ],
     [/\bTODO\b/, "An internal TODO is present"],
     [
       /\bhref\s*(?:=\s*(?:\{\s*)?|:\s*)["'][^"']*(?:\/resume|\.pdf)[^"']*["']/i,
       "A résumé or PDF link remains",
+    ],
+    [
+      /(?:\$\s*\d|\b\d+(?:\.\d+)?\s+million\s+dollars?\b)/i,
+      "A résumé-only employer revenue amount is present",
     ],
   ];
 

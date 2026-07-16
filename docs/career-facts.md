@@ -1,6 +1,6 @@
 # Career facts for John Dean / Flick
 
-This document is the public-safe editorial record behind `src/lib/career.ts`. The structured TypeScript file is the canonical source for rendered career history and a future résumé generator. This task deliberately does not create or publish a résumé PDF.
+This document is the public-safe editorial record behind `src/lib/career.ts`. The structured TypeScript file is the canonical source for rendered career history and résumé content. Verified private metrics may appear in a locally generated résumé PDF when explicitly approved, but they do not belong in the public site or repository source.
 
 ## Public identity
 
@@ -16,17 +16,17 @@ This document is the public-safe editorial record behind `src/lib/career.ts`. Th
 
 ## Verified chronology
 
-| Dates | Company | Public display title | Official or historical title note | Product or scope |
-| --- | --- | --- | --- | --- |
-| 2024–Present | GIPHY | Principal Architect | Exact HR-title confirmation remains open | Monetization, advertising, search, content delivery, partner, API, reliability, cost, and platform systems |
-| 2022–2024 | Shutterstock | Software Engineer | Exact official title remains open | Shutterstock Create, creative tooling integration, cloud infrastructure, Kubernetes, delivery, and operations |
-| 2020–2022 | Verta | Frontend Lead | Historical official title: Webmaster | Enterprise MLOps product, React/GraphQL web stack, contractor leadership, delivery, support, and on-call |
-| July 2019–April 2020 | Sandbox VR | Web Tech Lead | Historical official title: Senior Developer | Web platform for live multiplayer venues: leaderboards, scheduling, payments, experimentation, deployment, and on-call |
-| November 2015–July 2019 | Shutterstock | Software Developer | Historical résumé title: Senior Developer | Shutterstock Editor, partner SDK, internationalization, AWS/Kubernetes migration, marketplace modernization, and on-call |
-| November 2013–November 2015 | Time Warner Cable | Senior Developer / Feature Technical Lead | Official title: Senior Developer | Multi-room HTML5 DVR, feature leadership, releases, and Tier 4 beta support |
-| October 2011–November 2013 | Accenture | Developer / Application Architect | Exact official title sequence remains open | Embedded HTML5 DVR and native iOS operational-data systems |
-| October 2005–October 2011 | Nokia | Software Test Engineer | — | Carbide.c++ developer tools, automated testing, CI, team leadership, and Qt/Symbian toolchains |
-| March 2000–October 2004 | Metrowerks / Motorola / Freescale | Software Test Engineer / Factory Test Engineer | Historical end date requires reconciliation | CodeWarrior, IDE/SDK automation, embedded-board factory and acceptance tests |
+| Dates | Company | Title or factual role context | Product or scope |
+| --- | --- | --- | --- |
+| 2024–Present | GIPHY | Principal Architect | Multi-partner advertising networks, privacy-conscious targeting, monetization, search, content delivery, partner, API, reliability, cost, and platform systems |
+| 2022–2024 | Shutterstock | Software Engineer | Shutterstock Create, the company’s first AI image-editing tool, creative tooling integration, cloud infrastructure, Kubernetes, delivery, and operations |
+| 2020–2022 | Verta | Employee #6; no formal title | Owned everything that touched the browser: React/GraphQL, backend API integration, contractor leadership, delivery, support, and on-call |
+| July 2019–April 2020 | Sandbox VR | US salaried technical employee #4; no formal title | Hired to lead cloud systems outside the in-store game servers: web, booking, subscriptions, leaderboards, marketing, deployment, and on-call |
+| November 2015–July 2019 | Shutterstock | Software Developer | Shutterstock Editor, partner SDK, internationalization, AWS/Kubernetes migration, marketplace modernization, and on-call |
+| November 2013–November 2015 | Time Warner Cable | Senior Developer / Feature Technical Lead | Multi-room HTML5 DVR, feature leadership, releases, and Tier 4 beta support |
+| October 2011–November 2013 | Accenture | Developer / Application Architect | Embedded HTML5 DVR and native iOS operational-data systems |
+| October 2005–October 2011 | Nokia | Software Test Engineer | Carbide.c++ developer tools, automated testing, CI, team leadership, and Qt/Symbian toolchains |
+| March 2000–October 2004 | Metrowerks / Motorola / Freescale | Software Test Engineer / Factory Test Engineer | CodeWarrior, IDE/SDK automation, embedded-board factory and acceptance tests |
 
 ## Education
 
@@ -55,16 +55,9 @@ Morpheus is an archived cross-platform game-modernization and software-preservat
 
 ## Open questions
 
-- Exact official title for the 2022 Shutterstock return.
 - Exact month of the 2022 Shutterstock return.
 - Exact month of the 2024 GIPHY move.
-- Whether Principal Architect is the exact GIPHY HR title.
-- Whether Verta should publicly display Frontend Lead, Webmaster, or both.
-- Whether Sandbox VR should publicly display Web Tech Lead, Senior Developer, or both.
-- Exact Accenture official title sequence.
 - Exact Metrowerks/Freescale end date and Nokia transition timing.
-- Verified, public-safe GIPHY monetization outcomes.
-- Verified, public-safe Shutterstock Create outcomes.
 - Verified public metrics for Editor, its SDK, Verta, and other products.
 - Which Morpheus repositories should be formally marked archived and which source link should be canonical.
 
@@ -79,4 +72,4 @@ The historical résumé contained material that is not approved for the public s
 - The lost Soap Bubble project domain
 - Obsolete résumé links
 
-No private employer architecture, metrics, partner or customer identities, pricing, revenue, incidents, roadmaps, internal repositories, strategy, or staffing details belong in this record.
+No private employer architecture, partner or customer identities, pricing, incidents, roadmaps, internal repositories, strategy, or staffing details belong in this record. Public GIPHY copy may say that the advertising work materially increased revenue and supported the product’s sustainability. The approved revenue amount remains résumé-only.

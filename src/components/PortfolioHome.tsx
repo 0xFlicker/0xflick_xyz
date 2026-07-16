@@ -19,14 +19,14 @@ const systemFlow = [
 
 const principalScope = [
   {
-    title: "Set technical direction",
+    title: "Build revenue systems",
     description:
-      "Define system boundaries, standards, and sequencing across product, monetization, and platform concerns.",
+      "Lead architecture and implementation across multi-partner advertising networks, their subsystems, and sales channels.",
   },
   {
-    title: "Resolve cross-team constraints",
+    title: "Protect trust while targeting",
     description:
-      "Make product goals, infrastructure limits, delivery pressure, and revenue consequences visible in the same decision.",
+      "Use ethically sourced data and treat privacy regulation as a system constraint, not a post-launch disclaimer.",
   },
   {
     title: "Lead reliability and change",
@@ -127,15 +127,17 @@ export function PortfolioHome() {
                 id="principal-scope-heading"
                 className="mt-4 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white"
               >
-                Technical direction for a mature consumer platform.
+                Architecture for a platform worth sustaining.
               </h2>
             </div>
             <div>
               <p className="text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-                At GIPHY, I set technical direction across monetization and
-                advertising across search, content delivery, partner, API, and
-                platform systems. Reliability, infrastructure cost, delivery,
-                and product behavior all shape the work.
+                At GIPHY, I lead architecture and implementation across
+                monetization and advertising systems, including multi-partner
+                ad networks and privacy-conscious targeting designed around
+                applicable global regulations. The goal is practical: grow
+                revenue without sacrificing user trust, reliability, or the
+                product people use as a visual language.
               </p>
             </div>
           </div>

@@ -6,6 +6,7 @@ import { SectionLabel } from "@/components/PortfolioUI";
 import {
   education,
   formatCareerDateRange,
+  getCareerRoleLabel,
   publicCareerRoles,
   type CareerRole,
 } from "@/lib/career";
@@ -47,8 +48,6 @@ const capabilities = [
 
 function ExperienceCard({ role, index }: { role: CareerRole; index: number }) {
   const evidence = [...(role.outcomes ?? []), ...(role.responsibilities ?? [])];
-  const titleDiffers =
-    role.officialTitle && role.officialTitle !== role.displayTitle;
 
   return (
     <article
@@ -67,13 +66,8 @@ function ExperienceCard({ role, index }: { role: CareerRole; index: number }) {
           )}
         </div>
         <p className="mt-3 font-semibold text-zinc-800 dark:text-zinc-200">
-          {role.displayTitle}
+          {getCareerRoleLabel(role)}
         </p>
-        {titleDiffers && (
-          <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-            Historical official title: {role.officialTitle}
-          </p>
-        )}
         <p className="mt-2 font-mono text-xs text-brand-dark dark:text-brand-light">
           {formatCareerDateRange(role)}
         </p>

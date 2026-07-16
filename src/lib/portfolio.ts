@@ -1,4 +1,8 @@
-import { formatCareerDateRange, getCareerRole } from "@/lib/career";
+import {
+  formatCareerDateRange,
+  getCareerRole,
+  getCareerRoleLabel,
+} from "@/lib/career";
 
 const giphyRole = getCareerRole("giphy-2024");
 const secondShutterstockRole = getCareerRole("shutterstock-2022");
@@ -29,27 +33,27 @@ export const selectedWork = [
   },
   {
     id: selectedWorkIds.giphy,
-    eyebrow: `${giphyRole.displayTitle} · ${formatCareerDateRange(giphyRole)}`,
+    eyebrow: `${getCareerRoleLabel(giphyRole)} · ${formatCareerDateRange(giphyRole)}`,
     title: "GIPHY",
     summary:
-      "Technical direction across monetization, advertising, search, content delivery, partner, API, reliability, cost, and platform systems.",
-    focus: ["Technical direction", "Reliability + cost", "Monetization"],
+      "Technical direction and hands-on delivery across multi-partner advertising networks, privacy-conscious targeting, search, content delivery, partner, API, reliability, cost, and platform systems.",
+    focus: ["Monetization systems", "Privacy + trust", "Reliability + cost"],
   },
   {
     id: selectedWorkIds.shutterstockCreate,
     eyebrow: `Two tenures · ${formatCareerDateRange(firstShutterstockRole)} and ${formatCareerDateRange(secondShutterstockRole)}`,
     title: "Shutterstock Editor → Shutterstock Create",
     summary:
-      "Browser-based creative products, partner integrations, marketplace modernization, cloud migrations, Kubernetes, delivery, and production support.",
-    focus: ["Creative tooling", "Partner SDK", "Cloud + operations"],
+      "Browser-based creative products, Shutterstock’s first AI image-editing tool, partner integrations, marketplace modernization, cloud migrations, Kubernetes, delivery, and production support.",
+    focus: ["Creative + AI tooling", "Partner SDK", "Cloud + operations"],
   },
   {
     id: selectedWorkIds.verta,
     eyebrow: `Enterprise MLOps · ${formatCareerDateRange(vertaRole)}`,
     title: "Verta",
     summary:
-      "Customer-facing product and frontend ownership across React, GraphQL, contractor leadership, releases, enterprise integrations, support, and on-call.",
-    focus: ["Frontend leadership", "GraphQL", "Delivery + support"],
+      "Employee #6 with end-to-end ownership of everything that touched the browser: React, GraphQL, contractors, releases, enterprise integrations, support, and on-call.",
+    focus: ["Browser ownership", "GraphQL", "Delivery + support"],
   },
   {
     id: selectedWorkIds.morpheus,

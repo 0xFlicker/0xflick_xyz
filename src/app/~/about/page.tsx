@@ -131,8 +131,9 @@ export default function AboutPage() {
                 I later spent two substantial chapters at Shutterstock. Between
                 them, I left deliberately to work in games at Sandbox VR and
                 enterprise MLOps at Verta. I returned after the PicMonkey
-                acquisition, helped deliver Shutterstock Create, and moved to
-                GIPHY as a Principal Architect in 2024.
+                acquisition, helped deliver Shutterstock Create and
+                Shutterstock’s first AI image-editing tool, and moved to GIPHY
+                as a Principal Architect in 2024.
               </p>
               <p>
                 Principal-level problems rarely respect a repository boundary.

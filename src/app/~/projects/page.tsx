@@ -5,6 +5,7 @@ import { ArrowLink, SectionLabel } from "@/components/PortfolioUI";
 import {
   formatCareerDateRange,
   getCareerRole,
+  getCareerRoleLabel,
   type CareerRoleId,
 } from "@/lib/career";
 import {
@@ -102,12 +103,9 @@ function getWorkStoryMeta(story: WorkStory) {
 
   const role = getCareerRole(story.careerRoleId);
   return [
-    role.displayTitle,
+    getCareerRoleLabel(role),
     role.company === story.title ? undefined : role.company,
     formatCareerDateRange(role),
-    role.officialTitle && role.officialTitle !== role.displayTitle
-      ? `Official title: ${role.officialTitle}`
-      : undefined,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -120,7 +118,7 @@ const workStories: readonly WorkStory[] = [
     title: "GIPHY",
     careerRoleId: "giphy-2024",
     intro:
-      "Set technical direction across GIPHY’s monetization, advertising, search, delivery, partner, API, and platform systems.",
+      "Lead architecture and implementation across GIPHY’s monetization and advertising systems, alongside search, delivery, partner, API, and platform work.",
     evidence: [
       {
         label: "Context",
@@ -130,17 +128,17 @@ const workStories: readonly WorkStory[] = [
       {
         label: "Scope",
         description:
-          "Architecture, design review, migrations, reliability, operational ownership, infrastructure cost, and hands-on validation of critical paths.",
+          "Multi-partner advertising networks spanning multiple subsystems and sales channels, plus privacy-conscious targeting built on ethically sourced data.",
       },
       {
         label: "Operating constraints",
         description:
-          "New work must coexist with product behavior, delivery pressure, existing integrations, and the reliability expectations of a high-traffic platform.",
+          "Revenue growth must coexist with global privacy obligations, user trust, existing integrations, infrastructure cost, and the reliability expectations of a high-traffic platform.",
       },
       {
         label: "Work delivered",
         description:
-          "Technical direction and implementation review for changes across monetization, consumer, partner, and platform systems. Public metrics are intentionally omitted until verified.",
+          "Advertising and targeting systems that materially increased revenue while keeping privacy, user trust, reliability, and infrastructure cost inside the architecture.",
       },
     ],
   },
@@ -155,7 +153,7 @@ const workStories: readonly WorkStory[] = [
       {
         label: "Product",
         description:
-          "Browser-based creative tooling brought into Shutterstock and developed into Shutterstock Create.",
+          "Browser-based creative tooling brought into Shutterstock and developed into Shutterstock Create, including team delivery of Shutterstock’s first AI image-editing tool.",
       },
       {
         label: "Scope",
@@ -165,7 +163,7 @@ const workStories: readonly WorkStory[] = [
       {
         label: "Shipped result",
         description:
-          "Helped deliver Shutterstock Create and transition away from the previous Shutterstock Editor platform.",
+          "Helped deliver Shutterstock Create, contributed to its first AI image-editing capability, and transitioned away from the previous Shutterstock Editor platform.",
       },
       {
         label: "Career context",
@@ -210,7 +208,7 @@ const workStories: readonly WorkStory[] = [
     title: "Verta",
     careerRoleId: "verta-2020",
     intro:
-      "Took over customer-facing product and frontend ownership from the CTO for an enterprise model-management platform.",
+      "Joined as employee #6 and took over everything that touched the browser for an enterprise model-management platform.",
     evidence: [
       {
         label: "Product",
@@ -220,7 +218,7 @@ const workStories: readonly WorkStory[] = [
       {
         label: "Ownership",
         description:
-          "Designed and built web features, wrote GraphQL resolvers against backend APIs, and maintained tests, builds, and releases.",
+          "Owned browser-facing work end to end: web features, GraphQL resolvers, backend API integrations, tests, builds, and releases.",
       },
       {
         label: "Leadership",
