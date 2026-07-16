@@ -200,7 +200,7 @@ export const careerRoles = [
     productOrTeam: "CodeWarrior and embedded development boards",
     displayTitle: "Software Test Engineer / Factory Test Engineer",
     start: "March 2000",
-    end: "October 2004",
+    end: "October 2005",
     summary:
       "Began at Metrowerks working on CodeWarrior and embedded development-board tooling, continuing through Motorola’s acquisition and the Freescale spin-off. Built automated IDE, SDK, framework, and factory-acceptance tests across Mac and embedded platforms.",
     responsibilities: [
@@ -208,12 +208,6 @@ export const careerRoles = [
       "Factory and system-integration tests for microcontroller development boards using C and assembly.",
     ],
     publicSafe: true,
-    sourceNotes: [
-      "The historical résumé records an October 2004 end date; the later transition path into Nokia needs reconciliation.",
-    ],
-    needsVerification: [
-      "Exact Metrowerks/Freescale end date and Nokia transition timing.",
-    ],
   },
 ] as const satisfies readonly CareerRole[];
 

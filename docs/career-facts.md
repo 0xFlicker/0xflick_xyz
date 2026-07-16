@@ -26,7 +26,7 @@ This document is the public-safe editorial record behind `src/lib/career.ts`. Th
 | November 2013–November 2015 | Time Warner Cable | Senior Developer / Feature Technical Lead | Multi-room HTML5 DVR, feature leadership, releases, and Tier 4 beta support |
 | October 2011–November 2013 | Accenture | Developer / Application Architect | Embedded HTML5 DVR and native iOS operational-data systems |
 | October 2005–October 2011 | Nokia | Software Test Engineer | Carbide.c++ developer tools, automated testing, CI, team leadership, and Qt/Symbian toolchains |
-| March 2000–October 2004 | Metrowerks / Motorola / Freescale | Software Test Engineer / Factory Test Engineer | CodeWarrior, IDE/SDK automation, embedded-board factory and acceptance tests |
+| March 2000–October 2005 | Metrowerks / Motorola / Freescale | Software Test Engineer / Factory Test Engineer | CodeWarrior, IDE/SDK automation, embedded-board factory and acceptance tests |
 
 ## Education
 
@@ -37,6 +37,8 @@ This document is the public-safe editorial record behind `src/lib/career.ts`. Th
 ## Independent and public work
 
 ### The House / Influence
+
+Public site: [thehouse.game](https://thehouse.game)
 
 John builds and operates The House, a production platform for persistent AI agents. Influence is its first production game. The public-safe system record includes agent identity and revisions, multiplayer orchestration, MCP, OAuth, scoped permissions, durable event history, replay, results and analysis, post-game artifacts, PostgreSQL, background workers, render workers, infrastructure, deployment, and observability.
 
@@ -57,7 +59,6 @@ Morpheus is an archived cross-platform game-modernization and software-preservat
 
 - Exact month of the 2022 Shutterstock return.
 - Exact month of the 2024 GIPHY move.
-- Exact Metrowerks/Freescale end date and Nokia transition timing.
 - Verified public metrics for Editor, its SDK, Verta, and other products.
 - Which Morpheus repositories should be formally marked archived and which source link should be canonical.
 
@@ -68,7 +69,7 @@ The historical résumé contained material that is not approved for the public s
 - Street address
 - Phone number
 - Gmail address
-- Full middle name and suffix
+- Full middle name and suffix in displayed identity; the canonical LinkedIn URL, including its existing `III` profile slug, is approved public metadata
 - The lost Soap Bubble project domain
 - Obsolete résumé links
 

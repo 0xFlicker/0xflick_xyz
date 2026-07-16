@@ -211,6 +211,13 @@ export function validateStableCareerRecords(careerSource) {
       start: "July 2019",
       end: "April 2020",
     },
+    {
+      id: "metrowerks-2000",
+      company: "Metrowerks / Motorola / Freescale",
+      displayTitle: "Software Test Engineer / Factory Test Engineer",
+      start: "March 2000",
+      end: "October 2005",
+    },
   ];
 
   for (const expected of stableRecords) {

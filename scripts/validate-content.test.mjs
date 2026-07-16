@@ -49,6 +49,7 @@ test("keeps employer, displayed role, and dates coupled to stable career IDs", (
       { id: "shutterstock-2015", company: "Shutterstock", displayTitle: "Software Developer", start: "November 2015", end: "July 2019" },
       { id: "verta-2020", company: "Verta", roleContext: "Employee #6", start: "2020", end: "2022" },
       { id: "sandbox-vr-2019", company: "Sandbox VR", roleContext: "US salaried technical employee #4", start: "July 2019", end: "April 2020" },
+      { id: "metrowerks-2000", company: "Metrowerks / Motorola / Freescale", displayTitle: "Software Test Engineer / Factory Test Engineer", start: "March 2000", end: "October 2005" },
     ] as const satisfies readonly CareerRole[];
   `;
 
@@ -67,5 +68,11 @@ test("keeps employer, displayed role, and dates coupled to stable career IDs", (
       )
     ).join("\n"),
     /verta-2020 has displayTitle=Invented; expected <absent>/
+  );
+  assert.match(
+    validateStableCareerRecords(
+      validCareerSource.replace('end: "October 2005"', 'end: "October 2004"')
+    ).join("\n"),
+    /metrowerks-2000 has end=October 2004; expected October 2005/
   );
 });
