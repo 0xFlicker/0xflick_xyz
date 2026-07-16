@@ -53,7 +53,7 @@ export function PortfolioHome() {
               Turning emerging platforms into production systems.
             </h1>
             <p className="mt-8 max-w-2xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-              I’m John Dean, known online as Flick and 0xFlicker. I’m a
+              I’m John Dean, known online as Flick. I’m a
               Principal Architect at GIPHY with 25+ years building and operating
               systems across developer tools, consumer products, cloud
               platforms, MLOps, monetization, and AI agents. I stay close enough

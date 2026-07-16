@@ -102,7 +102,7 @@ export default function AboutPage() {
       <header className="max-w-4xl border-b border-zinc-200 pb-14 dark:border-zinc-700/60 sm:pb-20">
         <SectionLabel className="tracking-[0.22em]">About</SectionLabel>
         <h1 className="mt-6 text-balance text-5xl font-semibold tracking-[-0.04em] text-zinc-900 sm:text-6xl dark:text-white">
-          I’m John Dean, known online as Flick and 0xFlicker.
+          I’m John Dean, known online as Flick.
         </h1>
         <p className="mt-7 max-w-3xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
           I’m a Principal Architect at GIPHY and a hands-on systems engineer. I
