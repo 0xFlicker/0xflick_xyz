@@ -36,20 +36,20 @@ export const careerRoles = [
     start: "2024",
     location: "Colorado / Remote",
     summary:
-      "Set technical direction across GIPHY’s monetization, advertising, search, delivery, partner, and platform systems. Led architecture and implementation for multi-partner advertising networks and privacy-conscious targeting, balancing revenue growth with regulatory requirements, user trust, reliability, and infrastructure cost.",
+      "Set technical direction across GIPHY’s monetization, advertising, search, delivery, partner, and platform systems. Led architecture and implementation for multi-partner advertising networks and privacy-conscious targeting, balancing regulatory requirements, user trust, reliability, and infrastructure cost.",
     responsibilities: [
       "Led architecture and implementation for advertising networks spanning multiple subsystems and partner sales channels.",
       "Introduced privacy-conscious targeting built on ethically sourced data and designed around applicable global privacy regulations.",
       "Design review, migrations, reliability work, incident learning, and cost-aware operational ownership.",
     ],
     outcomes: [
-      "Built monetization systems that materially increased revenue and strengthened GIPHY’s ability to sustain the product.",
+      "Led architecture and implementation for advertising systems spanning multiple subsystems and partner sales channels, creating new revenue channels across GIPHY’s consumer and partner surfaces.",
       "Expanded advertising capability while preserving user trust and regulatory compliance as product requirements.",
     ],
     publicSafe: true,
     sourceNotes: [
       "The Principal title begins with the move to GIPHY in 2024 and must not be backdated.",
-      "The verified revenue amount is approved for the private résumé PDF only; keep public surfaces qualitative.",
+      "Unpublished financial amounts are not public career facts and must not appear in site or résumé content.",
     ],
     needsVerification: [
       "Exact month of the 2024 move.",

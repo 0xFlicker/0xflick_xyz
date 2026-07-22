@@ -1,6 +1,6 @@
 # Career facts for John Dean / Flick
 
-This document is the public-safe editorial record behind `src/lib/career.ts`. The structured TypeScript file is the canonical source for rendered career history and résumé content. Verified private metrics may appear in a locally generated résumé PDF when explicitly approved, but they do not belong in the public site or repository source.
+This document is the public-safe editorial record behind `src/lib/career.ts`. The structured TypeScript file is the canonical source for rendered career history and résumé content. Unpublished financial amounts do not belong in any public website, repository source, or résumé PDF.
 
 ## Public identity
 
@@ -73,4 +73,4 @@ The historical résumé contained material that is not approved for the public s
 - The lost Soap Bubble project domain
 - Obsolete résumé links
 
-No private employer architecture, partner or customer identities, pricing, incidents, roadmaps, internal repositories, strategy, or staffing details belong in this record. Public GIPHY copy may say that the advertising work materially increased revenue and supported the product’s sustainability. The approved revenue amount remains résumé-only.
+No private employer architecture, partner or customer identities, pricing, financial amounts, incidents, roadmaps, internal repositories, strategy, or staffing details belong in this record. GIPHY copy must preserve the architectural ownership and may describe the creation of new revenue channels without disclosing unpublished financial outcomes.

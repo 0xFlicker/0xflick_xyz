@@ -133,12 +133,12 @@ const workStories: readonly WorkStory[] = [
       {
         label: "Operating constraints",
         description:
-          "Revenue growth must coexist with global privacy obligations, user trust, existing integrations, infrastructure cost, and the reliability expectations of a high-traffic platform.",
+          "Advertising systems must coexist with global privacy obligations, user trust, existing integrations, infrastructure cost, and the reliability expectations of a high-traffic platform.",
       },
       {
         label: "Work delivered",
         description:
-          "Advertising and targeting systems that materially increased revenue while keeping privacy, user trust, reliability, and infrastructure cost inside the architecture.",
+          "Led architecture and implementation for advertising systems spanning multiple subsystems and partner sales channels, creating new revenue channels across GIPHY’s consumer and partner surfaces.",
       },
     ],
   },

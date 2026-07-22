@@ -135,8 +135,8 @@ export function PortfolioHome() {
                 At GIPHY, I lead architecture and implementation across
                 monetization and advertising systems, including multi-partner
                 ad networks and privacy-conscious targeting designed around
-                applicable global regulations. The goal is practical: grow
-                revenue without sacrificing user trust, reliability, or the
+                applicable global regulations. This work creates new revenue
+                channels without sacrificing user trust, reliability, or the
                 product people use as a visual language.
               </p>
             </div>

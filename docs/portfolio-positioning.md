@@ -59,7 +59,7 @@ The three recurring lines retained across the site are:
 
 ## Public-safety rule
 
-Employer descriptions name public companies, products, and approved titles while omitting private architecture, metrics, customers, partners, pricing, incidents, roadmaps, internal repositories, strategy, and staffing details. Public GIPHY copy may describe the verified revenue impact qualitatively; the approved amount remains confined to the locally generated résumé PDF. Historical private contact details are not public artifacts.
+Employer descriptions name public companies, products, and approved titles while omitting private architecture, financial amounts, customers, partners, pricing, incidents, roadmaps, internal repositories, strategy, and staffing details. GIPHY copy may describe new revenue channels but must not disclose unpublished financial outcomes. Historical private contact details are not public artifacts.
 
 ## Source of truth
 

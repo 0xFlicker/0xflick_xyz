@@ -2,11 +2,27 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  findConfidentialGiphyRevenueClaims,
   findLiteralInternalHrefs,
   isForbiddenArtifact,
   routeFromPageFile,
   validateStableCareerRecords,
 } from "./validate-content.mjs";
+
+test("rejects confidential GIPHY revenue claims while allowing the approved outcome", () => {
+  assert.equal(
+    findConfidentialGiphyRevenueClaims(
+      ["GIPHY", "systems generated $", "100 in revenue."].join(" ")
+    ).length,
+    1
+  );
+  assert.equal(
+    findConfidentialGiphyRevenueClaims(
+      "Led architecture and implementation for advertising systems spanning multiple subsystems and partner sales channels, creating new revenue channels across GIPHY’s consumer and partner surfaces."
+    ).length,
+    0
+  );
+});
 
 test("derives routes from App Router page files", () => {
   const appRoot = "/project/src/app";

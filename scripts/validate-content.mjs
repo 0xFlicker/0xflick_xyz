@@ -90,6 +90,17 @@ export function isForbiddenArtifact(file) {
   return namesResume && !sourceCodeExtensions.has(extension);
 }
 
+export function findConfidentialGiphyRevenueClaims(contents) {
+  const sensitiveClaim =
+    /\$\s*\d|\b\d+(?:\.\d+)?\s+million\b|within\s+(?:12 months|the first year)|multi-million|million\s+(?:dollars?\s+)?(?:in\s+)?revenue/i;
+
+  if (!/GIPHY/i.test(contents) || !sensitiveClaim.test(contents)) {
+    return [];
+  }
+
+  return ["A confidential GIPHY revenue claim is present"];
+}
+
 function findMatchingBrace(source, openingBrace) {
   let depth = 0;
   let quote = null;
@@ -247,7 +258,11 @@ export function validateStableCareerRecords(careerSource) {
 export async function validateContent(root = process.cwd()) {
   const sourceRoot = path.join(root, "src");
   const appRoot = path.join(sourceRoot, "app");
-  const publicTextRoots = [sourceRoot, path.join(root, "docs"), path.join(root, "public")];
+  const publicTextRoots = [
+    sourceRoot,
+    path.join(root, "docs"),
+    path.join(root, "public"),
+  ];
   const sourceFiles = (await filesUnder(sourceRoot)).filter((file) =>
     /\.(?:ts|tsx)$/.test(file)
   );
@@ -278,6 +293,11 @@ export async function validateContent(root = process.cwd()) {
   const publicTextEntries = await Promise.all(
     publicTextFiles.map(async (file) => ({ file, contents: await readFile(file, "utf8") }))
   );
+  const resumeGenerator = path.join(root, "scripts", "build_career_document.py");
+  publicTextEntries.push({
+    file: resumeGenerator,
+    contents: await readFile(resumeGenerator, "utf8"),
+  });
   const forbiddenText = [
     [/Employer anonymized/i, "An anonymized employer label remains"],
     [/soapbubble\.online/i, "The lost Soap Bubble domain remains"],
@@ -292,10 +312,6 @@ export async function validateContent(root = process.cwd()) {
       /\bhref\s*(?:=\s*(?:\{\s*)?|:\s*)["'][^"']*(?:\/resume|\.pdf)[^"']*["']/i,
       "A résumé or PDF link remains",
     ],
-    [
-      /(?:\$\s*\d|\b\d+(?:\.\d+)?\s+million\s+dollars?\b)/i,
-      "A résumé-only employer revenue amount is present",
-    ],
   ];
 
   for (const { file, contents } of publicTextEntries) {
@@ -303,6 +319,9 @@ export async function validateContent(root = process.cwd()) {
       if (pattern.test(contents)) {
         failures.push(`${reason} in ${path.relative(root, file)}`);
       }
+    }
+    for (const failure of findConfidentialGiphyRevenueClaims(contents)) {
+      failures.push(`${failure} in ${path.relative(root, file)}`);
     }
   }
 
