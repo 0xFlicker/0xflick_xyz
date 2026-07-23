@@ -36,7 +36,7 @@ The Principal title begins at GIPHY in 2024. The two Shutterstock tenures remain
 2. Named GIPHY Principal scope
 3. Shutterstock Create and Shutterstock Editor as separate product chapters
 4. Verta product, frontend, delivery, and operational leadership
-5. Morpheus as archived cross-platform game modernization and software preservation
+5. Morpheus as a live cross-platform adventure game and modernization effort
 6. Selected open source spanning CaptEmulation and 0xFlicker
 7. A focused 0xFlicker / onchain archive
 

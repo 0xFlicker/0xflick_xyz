@@ -44,7 +44,7 @@ John builds and operates The House, a production platform for persistent AI agen
 
 ### Morpheus
 
-Morpheus is an archived cross-platform game-modernization and software-preservation project. The public Soap Bubble repositories preserve source and development history across web, Electron, PhoneGap, and later Next.js work. The original backend, cloud environment, and project domain are unavailable, so historical distributed builds must not be presented as functional. In July 2026 the repositories were public but not marked archived on GitHub, and an older README still linked the lost domain. The portfolio may describe the work accurately but must not link the dead domain or promise a supported playable release.
+Morpheus is a cross-platform graphical adventure game from Soap Bubble Productions. Its data-driven runtime has shipped across web, Electron desktop, PhoneGap mobile, and later Next.js work. The current browser release is playable at [SoapBubble.xyz](https://www.soapbubble.xyz/) and [itch.io](https://soapbubble.itch.io/morpheus); the public Soap Bubble repositories retain its source and development history.
 
 ### Selected open source
 
@@ -60,7 +60,6 @@ Morpheus is an archived cross-platform game-modernization and software-preservat
 - Exact month of the 2022 Shutterstock return.
 - Exact month of the 2024 GIPHY move.
 - Verified public metrics for Editor, its SDK, Verta, and other products.
-- Which Morpheus repositories should be formally marked archived and which source link should be canonical.
 
 ## Deliberately excluded private or obsolete data
 
@@ -70,7 +69,6 @@ The historical résumé contained material that is not approved for the public s
 - Phone number
 - Gmail address
 - Full middle name and suffix in displayed identity; the canonical LinkedIn URL, including its existing `III` profile slug, is approved public metadata
-- The lost Soap Bubble project domain
 - Obsolete résumé links
 
 No private employer architecture, partner or customer identities, pricing, financial amounts, incidents, roadmaps, internal repositories, strategy, or staffing details belong in this record. GIPHY copy must preserve the architectural ownership and may describe the creation of new revenue channels without disclosing unpublished financial outcomes.

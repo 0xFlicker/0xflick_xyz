@@ -234,11 +234,11 @@ const workStories: readonly WorkStory[] = [
   },
   {
     id: selectedWorkIds.morpheus,
-    eyebrow: "06 · Archived game modernization",
+    eyebrow: "06 · Cross-platform adventure game",
     title: "Morpheus",
-    meta: "Cross-platform modernization and software preservation",
+    meta: "Cross-platform game modernization",
     intro:
-      "A six-to-eight-year effort to modernize a late-1990s graphical adventure game through a data-driven runtime and multiple distribution targets.",
+      "A data-driven graphical adventure game modernized for the browser after a long-running cross-platform development effort.",
     evidence: [
       {
         label: "Runtime",
@@ -251,20 +251,28 @@ const workStories: readonly WorkStory[] = [
           "Shipped through browser, Electron desktop, PhoneGap mobile, and later Next.js experiments across the project’s active years.",
       },
       {
-        label: "Technical record",
+        label: "Source",
         description:
-          "Public source, tags, commits, and development records survive across the Soap Bubble organization.",
+          "Public source, tags, commits, and development records span the Soap Bubble organization.",
       },
       {
         label: "Current status",
         description:
-          "Archived. The original backend, cloud environment, and domain are unavailable, so historical distributed builds are not presented as functional or supported.",
+          "Playable in the browser at SoapBubble.xyz and on itch.io.",
       },
     ],
     links: [
       {
+        href: "https://www.soapbubble.xyz/",
+        label: "Play Morpheus at SoapBubble.xyz",
+      },
+      {
+        href: "https://soapbubble.itch.io/morpheus",
+        label: "Play Morpheus on itch.io",
+      },
+      {
         href: "https://github.com/soap-bubble/web",
-        label: "Inspect the Morpheus source archive on GitHub",
+        label: "Inspect the Morpheus source on GitHub",
       },
     ],
   },

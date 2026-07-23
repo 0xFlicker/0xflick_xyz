@@ -57,11 +57,11 @@ export const selectedWork = [
   },
   {
     id: selectedWorkIds.morpheus,
-    eyebrow: "Archived game modernization",
+    eyebrow: "Cross-platform adventure game",
     title: "Morpheus",
     summary:
-      "A long-running software-preservation project: a data-driven adventure runtime shipped across browser, desktop, and mobile packaging. Source history survives; the original services do not.",
-    focus: ["Game runtime", "Cross-platform delivery", "Preservation"],
+      "A data-driven graphical adventure game modernized for the browser, with desktop and mobile releases in its cross-platform history and a current playable web release.",
+    focus: ["Game runtime", "Cross-platform delivery", "Playable web release"],
   },
   {
     id: selectedWorkIds.openSource,

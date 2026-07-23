@@ -538,11 +538,11 @@ def build_story():
     story.append(
         role(
             "Morpheus",
-            "Archived game modernization and software preservation",
-            "ARCHIVED",
-            "Cross-platform adventure runtime",
+            "Cross-platform game modernization",
+            "LIVE",
+            "Graphical adventure game | <link href='https://www.soapbubble.xyz/' color='#00246B'>soapbubble.xyz</link> | <link href='https://soapbubble.itch.io/morpheus' color='#00246B'>itch.io</link>",
             [
-                "Preserves a long-running, data-driven game runtime across browser, Electron, PhoneGap, and later Next.js work; source history survives while the original backend and hosted services do not.",
+                "Modernized a data-driven adventure runtime across web, Electron desktop, PhoneGap mobile, and later Next.js work; the current browser release is playable at SoapBubble.xyz and itch.io.",
             ],
             gap=3,
         )
