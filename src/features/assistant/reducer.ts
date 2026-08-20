@@ -27,7 +27,7 @@ export type AssistantAction =
   | { type: "work/checking-context"; turnId: TurnId }
   | { type: "work/compacting"; turnId: TurnId | null }
   | { type: "work/generating"; turnId: TurnId; hasContent: boolean }
-  | { type: "work/completed" }
+  | { type: "work/completed"; turnId: TurnId | null }
   | { type: "work/stopped" }
   | { type: "work/failed"; code: ModelErrorCode };
 
@@ -97,7 +97,7 @@ export function assistantReducer(
         },
       };
     case "work/completed":
-      return { ...state, work: { status: "completed" } };
+      return { ...state, work: { status: "completed", turnId: action.turnId } };
     case "work/stopped":
       return { ...state, work: { status: "stopped" } };
     case "work/failed":

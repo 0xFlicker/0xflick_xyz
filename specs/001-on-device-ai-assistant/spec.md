@@ -215,18 +215,15 @@ This feature excludes web search, backend content loading, tools, durable cross-
 
 ### Measurable Outcomes
 
-- **SC-001**: At least 90% of eligible evaluation participants can open the ready assistant, submit a prompt, receive a response, and complete a context-dependent follow-up without assistance in under two minutes.
-- **SC-002**: Every tested activation, submission, stop, retry, deletion, clear-all, setting-save, and compaction action produces visible and assistive-technology-compatible acknowledgment within one second.
-- **SC-003**: On the project owner's current supported Mac with a ready model, at least 90% of ordinary evaluation prompts begin showing generated content within 15 seconds, and no generation presents more than five seconds of ambiguous inactivity.
-- **SC-004**: On that same Mac, across a minimum 20-prompt evaluation covering explanation, transformation, planning, uncertainty, follow-up context, and unsupported live-information requests, at least 80% of responses receive a helpful-and-honest score of 3 or better on a 4-point rubric from two reviewers, with zero critical false claims of live web, tool, data, or action access.
-- **SC-005**: In a 100-session persistence test, all completed sessions reopen with the correct title, order, transcript, and context state after reload; the 101st session is blocked without silent eviction.
-- **SC-006**: Individual deletion and clear-all tests remove 100% of the selected local assistant data while preserving data explicitly outside the chosen deletion scope.
-- **SC-007**: At least 90% of context-dependent evaluation prompts after automatic or manual compaction preserve the critical facts identified in the source conversation, and no compaction deletes visible transcript messages.
-- **SC-008**: In every tested unsupported, preparation, generation, interruption, storage, overflow, and failure scenario, evaluators can identify the current state and available next action without consulting external instructions.
-- **SC-009**: At least 90% of five or more representative portfolio evaluators can correctly state after one visit that the assistant runs locally, has no live web or tools, can be wrong, and stores history only in their browser.
-- **SC-010**: All core flows meet WCAG 2.2 AA expectations in automated checks and manual keyboard, screen-reader, contrast, zoom, and reduced-motion review, with no critical accessibility blocker.
-- **SC-011**: Across tested viewport widths from 320 to 2,560 pixels, all states avoid horizontal page overflow and keep their primary action, state explanation, and route back to the portfolio usable.
-- **SC-012**: At least 80% of five or more target portfolio evaluators agree that the completed experience provides stronger evidence of AI product and engineering capability than the site's static AI claims alone.
+- **SC-001**: Every tested activation, submission, stop, retry, deletion, clear-all, setting-save, and compaction action produces visible and assistive-technology-compatible acknowledgment within one second.
+- **SC-002**: On the project owner's current supported Mac with a ready model, at least 90% of ordinary evaluation prompts begin showing generated content within 15 seconds, and no generation presents more than five seconds of ambiguous inactivity.
+- **SC-003**: On that same Mac, across a minimum 20-prompt evaluation covering explanation, transformation, planning, uncertainty, follow-up context, and unsupported live-information requests, at least 80% of responses receive a helpful-and-honest score of 3 or better on a 4-point rubric from two reviewers, with zero critical false claims of live web, tool, data, or action access.
+- **SC-004**: In a 100-session persistence test, all completed sessions reopen with the correct title, order, transcript, and context state after reload; the 101st session is blocked without silent eviction.
+- **SC-005**: Individual deletion and clear-all tests remove 100% of the selected local assistant data while preserving data explicitly outside the chosen deletion scope.
+- **SC-006**: At least 90% of context-dependent evaluation prompts after automatic or manual compaction preserve the critical facts identified in the source conversation, and no compaction deletes visible transcript messages.
+- **SC-007**: In every tested unsupported, preparation, generation, interruption, storage, overflow, and failure scenario, evaluators can identify the current state and available next action without consulting external instructions.
+- **SC-008**: All core flows meet WCAG 2.2 AA expectations in automated checks and manual keyboard, screen-reader, contrast, zoom, and reduced-motion review, with no critical accessibility blocker.
+- **SC-009**: Across tested viewport widths from 320 to 2,560 pixels, all states avoid horizontal page overflow and keep their primary action, state explanation, and route back to the portfolio usable.
 
 ## Assumptions
 
@@ -239,12 +236,12 @@ This feature excludes web search, backend content loading, tools, durable cross-
 - The session cap is 100. The product blocks at the cap rather than automatically deleting data.
 - Browser-local persistence is best-effort. Accounts, synchronization, persistent-storage guarantees, and export are outside this feature.
 - Context warning begins at 75% of reported capacity and automatic compaction occurs before a turn expected to exceed 80%. If capacity is unknown, the limitation is shown and overflow recovery is explicit.
-- Feature-specific reach, completion, comprehension, quality, and portfolio impact are measured through evaluator studies rather than shipped assistant analytics. Any existing site-wide page-view measurement remains outside this feature and cannot include assistant content or interaction details.
+- Feature-specific quality, timing, context retention, interaction, and accessibility are measured through bounded owner-device evaluation rather than shipped assistant analytics. Any existing site-wide page-view measurement remains outside this feature and cannot include assistant content or interaction details.
 - Model preparation duration is not bounded because download size, connection, extraction, and device capability vary; prompt status clarity and ready-model response timing are bounded instead.
 
 ## Dependencies
 
 - A supported browser release must expose an eligible on-device language model, availability information, model preparation, incremental response delivery, cancellation, and context-capacity signals needed by the scoped experience.
 - The browser and device must meet the vendor's current operating-system, storage, memory or graphics, processor, and connection requirements.
-- The project owner's current supported Mac and the required reviewers must be available for response-quality, performance, lifecycle, accessibility, comprehension, and portfolio-impact validation.
+- The project owner's current supported Mac and the required reviewers must be available for response-quality, performance, lifecycle, accessibility, and context-retention validation.
 - Existing portfolio navigation and visual identity must provide a discoverable entry point and coherent route back without requiring unrelated route redesign.

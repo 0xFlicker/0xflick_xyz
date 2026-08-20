@@ -276,7 +276,7 @@ export type WorkState =
   | { status: "checking_context"; turnId: TurnId }
   | { status: "compacting"; turnId: TurnId | null }
   | { status: "generating"; turnId: TurnId; hasContent: boolean }
-  | { status: "completed" }
+  | { status: "completed"; turnId: TurnId | null }
   | { status: "stopped" }
   | { status: "failed"; code: ModelErrorCode };
 

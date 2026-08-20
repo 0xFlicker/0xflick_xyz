@@ -16,7 +16,9 @@ test("supports keyboard, focus-managed dialogs, reduced motion, and reflow", asy
       promptStreaming() {
         return new ReadableStream<string>({
           start(controller) {
-            controller.enqueue("Accessible response");
+            controller.enqueue(
+              "## Accessible response\n\nUse **plain words** and _natural speech_.",
+            );
             controller.close();
           },
         });
@@ -45,9 +47,14 @@ test("supports keyboard, focus-managed dialogs, reduced motion, and reflow", asy
   await expect(page.getByRole("dialog", { name: "Assistant settings" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Settings" })).toBeFocused();
-  await page.getByLabel("Message the local assistant").fill("Keyboard and status check");
-  await page.getByRole("button", { name: "Send message" }).press("Enter");
+  const composer = page.getByLabel("Message the local assistant");
+  await composer.fill("Keyboard and status check");
+  await composer.press("Enter");
+  await expect(composer).toBeFocused();
   await expect(page.getByRole("status")).toContainText("Response complete");
+  await expect(page.getByRole("status").locator(".sr-only")).toHaveText(
+    "Response complete. Accessible response Use plain words and natural speech.",
+  );
   await expect(page.getByLabel("Conversation transcript")).toHaveAttribute("aria-busy", "false");
 
   const results = await new AxeBuilder({ page }).analyze();

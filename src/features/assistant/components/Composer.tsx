@@ -19,18 +19,17 @@ export function Composer({
   value,
   work,
 }: ComposerProps) {
-  const preparing =
-    work.status === "checking_context" || work.status === "compacting";
+  const compacting = work.status === "compacting";
   const generating = work.status === "generating";
-  const canSend = !disabled && !generating && value.trim().length > 0;
+  const busy =
+    work.status === "queued" ||
+    work.status === "checking_context" ||
+    compacting ||
+    generating;
+  const canSend = !disabled && !busy && value.trim().length > 0;
 
-  if (preparing) {
-    const automatic =
-      work.status === "checking_context" || work.turnId !== null;
-    const activity =
-      work.status === "compacting"
-        ? "Making room for this conversation…"
-        : "Preparing your message…";
+  if (compacting) {
+    const automatic = work.turnId !== null;
 
     return (
       <div className="rounded-[1.6rem] border border-zinc-200 bg-white p-2 shadow-[0_18px_60px_-30px_rgba(24,24,27,0.35)] dark:border-white/10 dark:bg-zinc-900">
@@ -41,7 +40,7 @@ export function Composer({
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-zinc-900 dark:text-white">
-              {activity}
+              Making room for this conversation…
             </p>
             <p className="mt-0.5 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
               {automatic
@@ -51,6 +50,7 @@ export function Composer({
           </div>
           {automatic ? (
             <button
+              autoFocus
               className="shrink-0 rounded-full border border-zinc-200 px-3 py-2 text-sm font-semibold text-zinc-700 outline-none hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-cyan-500 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/10"
               onClick={onStop}
               type="button"

@@ -47,6 +47,19 @@ export function AssistantShell({
   const hasContextActivity =
     conversation !== null &&
     (conversation.context !== null || conversation.turns.length > 0);
+  const completedTurnId =
+    state.work.status === "completed" ? state.work.turnId : null;
+  const completedTurn =
+    completedTurnId !== null
+      ? conversation?.turns.find(
+          (candidate) => candidate.id === completedTurnId,
+        ) ?? null
+      : null;
+  const completedResponse = completedTurn
+    ? conversation?.messages.find(
+        (message) => message.id === completedTurn.assistantMessageId,
+      )?.text ?? null
+    : null;
   return (
     <main className="flex h-dvh w-full min-w-0 overflow-hidden bg-[#f4f5f3] text-zinc-950 dark:bg-[#090b0c] dark:text-white">
       <SessionSidebar
@@ -71,7 +84,7 @@ export function AssistantShell({
             <h1 className="truncate text-sm font-semibold">
               {conversation?.session.title ?? "New local chat"}
             </h1>
-            <ActivityStatus state={state} />
+            <ActivityStatus completedResponse={completedResponse} state={state} />
           </div>
           <div className="flex items-center gap-2">
             {state.environment.status === "ready" && hasContextActivity ? (

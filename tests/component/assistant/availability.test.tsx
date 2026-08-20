@@ -135,7 +135,7 @@ describe("assistant availability", () => {
     );
     await user.click(screen.getByRole("button", { name: "Send message" }));
 
-    expect(await screen.findByText("Preparing your message…")).toBeVisible();
+    expect(await screen.findByRole("status")).toHaveTextContent("Preparing your message");
     expect(screen.queryByText(/downloading the on-device model/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/download complete/i)).not.toBeInTheDocument();
     expect(await screen.findByText("A local response.")).toBeVisible();

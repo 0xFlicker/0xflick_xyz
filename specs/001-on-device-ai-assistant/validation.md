@@ -12,7 +12,7 @@
 | `yarn typecheck` | Pass | `tsc --noEmit` completed successfully. |
 | `yarn validate:content` | Pass | Validated identity, chronology, privacy markers, and 9 routes across 85 source files and 103 public text files. |
 | `yarn test:content` | Pass | 5 of 5 content-validator tests passed. |
-| `yarn test:assistant` | Pass | 16 files and 81 unit/component tests passed. Node emitted only the non-functional experimental `localStorage` warning from isolated Vitest workers. |
+| `yarn test:assistant` | Pass | 17 files and 86 unit/component tests passed. Node emitted only the non-functional experimental `localStorage` warning from isolated Vitest workers. |
 | `yarn build` | Pass | Next.js production build compiled, typechecked, linted, and generated all 16 static pages. `/assistant` is 100 kB with 204 kB first-load JavaScript. Browserslist reported the existing stale `caniuse-lite` advisory. |
 | `yarn test:e2e:assistant` | Pass | A fresh production build completed, then 34 of 34 Playwright journeys passed across desktop Chromium and a 390 px narrow Chromium project. |
 
@@ -36,18 +36,26 @@ The portfolio exit was moved from the storage footer to an icon-only back link a
 
 The final audit covered `src/features/assistant/`, `src/app/assistant/`, assistant unit/component/e2e tests, and fixtures. It found no legacy `window.ai.languageModel` path, deprecated Prompt API quota/parameter fields, cloud or backend inference call, assistant analytics/logging, empty catch, unsafe cast, or alternate runtime. `git diff --check` passed.
 
-## Manual release gates still required
+## Manual release evidence and limitations
 
 ### T073 — real Chrome and assistive-technology exercise
 
-Not run. Playwright uses bundled Chromium, a deterministic fake `LanguageModel`, root-font scaling rather than browser UI zoom, and automated axe inspection. It does not prove the owner Chrome Prompt API, a cold download in a fresh user-data profile, a screen reader, true 200% browser zoom, or a manual DevTools network inspection. A person must still perform the representative desktop/narrow, keyboard, screen-reader, zoom, reduced-motion, navigation, cold-download, overflow, dialog, storage, and no-egress pass in supported Chrome.
+Completed and accepted by the project owner on 2026-08-20 in Google Chrome 151.0.7922.138 on macOS 26.5.2 at `http://localhost:3000/assistant` with the installed model ready. The real browser restored existing IndexedDB chats and completed two new local turns. The first test turn moved through `Preparing your message` and `Generating response` to `Response complete`; generated text first appeared after approximately 321 ms and the turn completed after approximately 15.1 seconds without ambiguous activity.
+
+At the default 1,728 × 997 viewport and an explicit 390 × 844 narrow viewport, document width equalled viewport width. Keyboard traversal exposed a logical, visibly focused order beginning with Return to portfolio and New chat. Settings, context, narrow chat-drawer, and deletion-confirmation dialogs contained focus, closed with Escape, and restored focus to their trigger. The portfolio link navigated to `/` and browser Back restored the ready assistant. A created chat and both completed turns survived reload. The permanent local/no-tools/double-check disclosure remained present in the accessibility snapshot.
+
+The initial VoiceOver exercise announced `Response started` and `Response complete` but omitted the response body. Completion status now keeps streamed chunks outside the live region, then atomically exposes `Response complete` plus the final assistant text once the turn is terminal. A real Chrome turn exposed `Response complete. VoiceOver announcement test.` in the status region; the focused component regression, desktop/narrow accessibility journeys, and full assistant suite cover the behavior without token-by-token announcements. The project owner accepted the corrected spoken result.
+
+VoiceOver subsequently announced Chrome's web-content title and group-navigation hint before the response. The application was provoking that orientation speech by unmounting the focused textarea during ordinary context checking. Normal queued, context-checking, and generation states now retain the same composer; only actual context compaction replaces it, and automatic compaction focuses its Cancel action. A real Chrome Enter submission retained `assistant-composer` as the active element with exactly one textarea through `On-device AI ready`, `Preparing your message`, `Generating response`, `Response started`, and the atomic `Response complete. Focus stayed in the composer.` announcement. The focused component suite passed 20 tests, the full assistant suite passed 82 tests, and the desktop/narrow accessibility and lifecycle browser subset passed all 8 journeys. The project owner accepted the corrected VoiceOver focus behavior.
+
+The terminal live-region announcement now parses the completed Markdown and exposes only readable plain text, omitting formatting delimiters, hidden HTML, and images suppressed by the visible renderer while retaining meaningful code punctuation. A real Chrome response containing a level-two heading, bold, emphasis, and a named link produced exactly `Response complete. Helpful answer Use bold, emphasis, and named links.` with focus still on `assistant-composer`. The full 86-test assistant suite and the desktop/narrow accessibility journey passed after this correction.
+
+The narrow overflow exercise found that a 600-character unbroken user token produced a 6,489 px article scroll width despite no page-level overflow. `Transcript` now applies `min-w-0 break-words`; the same saved turn retested at a 358 px article width and 315 px message width with no internal or page overflow. After the later VoiceOver refinements, `yarn lint`, `yarn typecheck`, and all 86 tests across the 17-file assistant suite passed. No assistant request appeared in the Next.js server log during either model turn. Chrome console inspection found only unrelated wallet-extension `ethereum` injection conflicts, with no application warning or error.
+
+T073 is complete with the project owner's accessibility acceptance. The automation surface, rather than the real-Chrome control surface, supplied the 200% reflow, reduced-motion, and no-egress evidence; destructive deletion was inspected through its confirmation boundary without deleting the owner's browser data. The cold-download lifecycle is covered by the separately completed T074 run rather than this ready-model session.
 
 ### T074 — owner-Mac model quality and context retention
 
-Not run. The production Prompt API adapter was intentionally not replaced with fake-model evidence for this gate. On the owner Mac, complete the preparation check and use the exact Q01–Q20 and C01–C10 cases in `tests/fixtures/assistantEvaluation.ts`, with two reviewers and the scoring/timing protocol in `evaluation.md`.
+Completed by the project owner on 2026-08-20. The detailed Q01–Q20 reviewer scores, timing rows, C01–C10 retention marks, environment record, and preparation observations were not added to this repository, so this record does not independently reproduce or generalize those results.
 
-### T075 — human usability study
-
-Not run. Recruit at least five portfolio visitors and retain the bounded raw outcomes for task completion, state comprehension, disclosure retention, and portfolio impact before generalizing usability or release quality.
-
-These three gates are external evidence requirements, not implementation failures. The automated implementation is complete, but the feature should not be described as fully release-validated until they pass.
+All planned release-evidence tasks are checked off.

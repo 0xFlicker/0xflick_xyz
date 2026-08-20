@@ -63,7 +63,7 @@ Environment state is independent from storage and current work state.
 
 - New chat selects an unsaved blank draft with focused composer. It does not create empty history or consume the 100-session limit.
 - At 100 saved sessions, New chat is blocked immediately with a clear explanation and direct access to session deletion. `acceptPrompt` repeats the cap check transactionally so another window cannot create a 101st session. Existing data is never evicted.
-- Send accepts non-empty multi-line text, gives visible acknowledgment within one second, persists one queued turn, clears the composer only after acceptance, and starts queue processing.
+- Send accepts non-empty multi-line text, gives visible acknowledgment within one second, persists one queued turn, clears the composer only after acceptance, and starts queue processing. The focused composer remains mounted through ordinary context checking and generation so assistive technology is not displaced into the browser's page container.
 - Repeated activation for the same pending composer submission is deduplicated. A deliberate later submission creates a distinct turn.
 - When another window is generating for the session, the accepted prompt renders as queued. The interface does not imply that two generations are active.
 - Session titles are deterministic from the first prompt and can duplicate; date/recency and stable selection keep them distinguishable.
@@ -129,9 +129,9 @@ Destructive actions abort relevant local model work before attempting persistenc
 
 - Every primary action is a semantic button or link with a visible focus style and non-color state label.
 - Dialogs trap focus only while open, close with Escape when safe, have labelled titles/descriptions, and restore focus to the invoking or next relevant control.
-- Composer has a persistent label. `Enter` sends only according to the documented desktop shortcut; `Shift+Enter` always inserts a line break, and an explicit Send button remains available.
+- Composer has a persistent label. `Enter` sends only according to the documented desktop shortcut; `Shift+Enter` always inserts a line break, and an explicit Send button remains available. Only actual context compaction may replace the composer; automatic compaction moves focus to its Cancel action.
 - Busy state uses `aria-busy` on the relevant conversation region, not the entire page.
-- Errors use an alert only when immediate attention is required; ordinary lifecycle changes use the throttled status region.
+- Errors use an alert only when immediate attention is required; ordinary lifecycle changes use the throttled status region. A completed response is announced once as plain text derived from its Markdown syntax, without speaking formatting delimiters or exposing content that the visible renderer suppresses.
 - Progress has a text label and value when determinate. Spinner animation is never the sole signal.
 - Automated axe checks are necessary but not sufficient: release validation includes keyboard-only, focus restoration, zoom/reflow, reduced-motion, and screen-reader status spot checks.
 

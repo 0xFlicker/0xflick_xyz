@@ -590,7 +590,9 @@ export function AssistantWorkspace({
           );
           active.session = null;
         }
-        if (mountedRef.current) dispatch({ type: "work/completed" });
+        if (mountedRef.current) {
+          dispatch({ type: "work/completed", turnId: claimed.turnId });
+        }
       } catch (error) {
         sessionCache.clear();
         const code = errorCode(error);
@@ -717,7 +719,7 @@ export function AssistantWorkspace({
         } else {
           result.session.destroy();
         }
-        dispatch({ type: "work/completed" });
+        dispatch({ type: "work/completed", turnId: null });
       } else {
         dispatch({ type: "work/failed", code: errorCode(new Error(result.code)) });
       }

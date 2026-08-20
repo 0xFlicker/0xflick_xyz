@@ -101,7 +101,7 @@ test("available model initialization never appears as another download", async (
   await page.getByLabel("Message the local assistant").fill("Use the ready model");
   await page.getByRole("button", { name: "Send message" }).click();
 
-  await expect(page.getByText("Preparing your message…")).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Preparing your message");
   await expect(page.getByText(/downloading the on-device model/i)).toHaveCount(0);
-  await expect(page.getByText("Ready without a download.")).toBeVisible();
+  await expect(page.getByText("Ready without a download.", { exact: true })).toBeVisible();
 });

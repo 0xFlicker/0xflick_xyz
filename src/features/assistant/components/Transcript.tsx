@@ -89,7 +89,7 @@ export function Transcript({ conversation, onRetry }: TranscriptProps) {
             const label = terminalLabel(assistant);
             return (
               <article className="flex flex-col gap-5" key={turn.id}>
-                <div className="ml-auto max-w-[88%] whitespace-pre-wrap rounded-[1.4rem] rounded-br-md bg-zinc-900 px-5 py-3.5 text-[0.95rem] leading-7 text-white dark:bg-zinc-100 dark:text-zinc-950">
+                <div className="ml-auto min-w-0 max-w-[88%] break-words whitespace-pre-wrap rounded-[1.4rem] rounded-br-md bg-zinc-900 px-5 py-3.5 text-[0.95rem] leading-7 text-white dark:bg-zinc-100 dark:text-zinc-950">
                   {user.text}
                 </div>
                 <div className="group min-w-0 max-w-full pl-1 sm:pl-4">

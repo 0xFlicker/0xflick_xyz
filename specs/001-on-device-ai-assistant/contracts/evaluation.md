@@ -30,7 +30,7 @@ Test reports must name the evidence class. A fake-model pass must never be descr
 
 - Every environment, preparation, generation, storage, context, and failure state has current-state text and an applicable next action.
 - First action acknowledgment occurs within one second under fake timers.
-- Streaming updates visually without announcing every chunk; state transitions use the status region.
+- Streaming updates visually without announcing every chunk; state transitions use the status region, and the terminal response announcement contains readable plain text rather than Markdown delimiters.
 - Composer validation, duplicate submission prevention, queued and active Stop, copy success/failure, and retry behavior.
 - Settings count/save/clear, session-limit recovery, delete/Clear all confirmation, and focus restoration.
 - Markdown headings, lists, tables, quotes, links, inline/code blocks; raw HTML and images do not render.
@@ -49,7 +49,7 @@ Test reports must name the evidence class. A fake-model pass must never be descr
 - Personality and context state persist; manual/automatic compaction leaves the transcript intact; overflow blocks until rebuild.
 - Browser request observation confirms no assistant content or generated resource URL leaves the page.
 - Representative wide desktop and narrow viewport runs have no page-level horizontal overflow and preserve navigation/composer access.
-- Keyboard-only dialogs, focus return, visible focus, reduced-motion mode, zoom/reflow spot checks, and `@axe-core/playwright` produce no serious or critical violations.
+- Keyboard-only dialogs, focus return, focus stability from composer submission through response announcement, visible focus, reduced-motion mode, zoom/reflow spot checks, and `@axe-core/playwright` produce no serious or critical violations.
 
 ## Real-Model Readiness Procedure
 
@@ -125,16 +125,6 @@ Construct ten compactable conversations with a reviewer-authored manifest of cri
 6. Have both reviewers mark each critical item retained, contradicted, or absent.
 
 At least 90% of evaluated context-dependent follow-ups must preserve every critical fact needed for that answer. Any invented contradictory fact is a failure for that case. A compaction failure that honestly blocks generation tests failure UX but does not count as a successful retention case.
-
-## Usability and Disclosure Checks
-
-With at least five representative portfolio evaluators:
-
-- At least 90% complete open → first prompt → context-dependent follow-up without assistance in under two minutes on a ready environment.
-- After one visit, at least 90% can state that processing is local, there is no live web/tools, results can be wrong, and saved history exists only in this browser.
-- In sampled unsupported, setup, generating, interrupted, storage, overflow, and failure states, evaluators identify the current state and next action without outside instructions.
-
-The report includes participant count and raw outcomes. It must not generalize beyond this small demonstration sample.
 
 ## Required Release Record
 

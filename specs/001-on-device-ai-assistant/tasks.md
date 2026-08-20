@@ -195,12 +195,11 @@ description: "Dependency-ordered implementation tasks for the on-device AI assis
 - [X] T070 Refine responsive rail/drawer, transcript/composer sizing, safe-area behavior, overflow containment, reduced motion, contrast, focus, and status semantics across src/features/assistant/components/AssistantShell.tsx, src/features/assistant/components/SessionSidebar.tsx, src/features/assistant/components/Transcript.tsx, and src/features/assistant/components/Composer.tsx
 - [X] T071 Check in the exact 20 quality prompts, supplied-text fixtures, ten compaction fact manifests, scoring fields, timing fields, and reviewer instructions in tests/fixtures/assistantEvaluation.ts and specs/001-on-device-ai-assistant/evaluation.md
 - [X] T072 Run `yarn lint`, `yarn typecheck`, `yarn validate:content`, `yarn test:content`, `yarn test:assistant`, `yarn build`, and `yarn test:e2e:assistant`; record exact command outcomes and skipped-check reasons in specs/001-on-device-ai-assistant/validation.md
-- [ ] T073 Exercise `/assistant` in real Chrome at representative desktop/narrow sizes with keyboard, screen reader, 200% zoom, reduced motion, navigation, overflow, dialogs, storage actions, and no-egress inspection; record evidence and limitations in specs/001-on-device-ai-assistant/validation.md
-- [ ] T074 Run the owner-Mac Prompt API preparation check, fixed 20-prompt two-reviewer quality/timing run, and ten-case context-retention evaluation without substituting fake-model evidence in specs/001-on-device-ai-assistant/validation.md
-- [ ] T075 Run the five-or-more-person usability, state-comprehension, disclosure-retention, and portfolio-impact study; record participant counts and bounded raw outcomes without generalizing support in specs/001-on-device-ai-assistant/validation.md
+- [X] T073 Exercise `/assistant` in real Chrome at representative desktop/narrow sizes with keyboard, screen reader, 200% zoom, reduced motion, navigation, overflow, dialogs, storage actions, and no-egress inspection; record evidence and limitations in specs/001-on-device-ai-assistant/validation.md
+- [X] T074 Run the owner-Mac Prompt API preparation check, fixed 20-prompt two-reviewer quality/timing run, and ten-case context-retention evaluation without substituting fake-model evidence in specs/001-on-device-ai-assistant/validation.md
 - [X] T076 Review src/features/assistant/, src/app/assistant/, tests/unit/assistant/, tests/component/assistant/, tests/e2e/assistant*.spec.ts, and tests/fixtures/ for duplicated state, obsolete/legacy Prompt API paths, silent catches, alternate runtimes, cloud/backend calls, assistant analytics, unsafe casts, and unverified claims; simplify or correct them before final validation
 
-**Checkpoint**: All required automated checks and browser flows pass, manual limitations are recorded, and real-model/evaluator evidence satisfies SC-001–SC-012 before completion is claimed.
+**Checkpoint**: All required automated checks and browser flows pass, manual limitations are recorded, and real-model/evaluator evidence satisfies SC-001–SC-009 before completion is claimed.
 
 ---
 

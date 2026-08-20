@@ -12,7 +12,7 @@ const requiredProps = {
 };
 
 describe("Composer activity states", () => {
-  it("uses the compact preparation state before context is assessed", () => {
+  it("keeps the composer mounted while context is assessed", () => {
     render(
       <Composer
         {...requiredProps}
@@ -21,10 +21,10 @@ describe("Composer activity states", () => {
       />,
     );
 
-    expect(screen.getByText("Preparing your message…")).toBeVisible();
-    expect(screen.getByText("Your message will start automatically.")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Cancel" })).toBeVisible();
-    expect(screen.queryByLabelText("Message the local assistant")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Message the local assistant")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
+    expect(screen.queryByText("Preparing your message…")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
   });
 
   it("replaces the composer with the approved automatic-compaction state", async () => {
@@ -43,7 +43,9 @@ describe("Composer activity states", () => {
     expect(screen.queryByLabelText("Message the local assistant")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Stop response" })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    expect(cancel).toHaveFocus();
+    await user.click(cancel);
     expect(onStop).toHaveBeenCalledOnce();
   });
 

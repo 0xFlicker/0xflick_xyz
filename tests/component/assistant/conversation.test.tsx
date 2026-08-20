@@ -8,6 +8,56 @@ import { MemoryAssistantRepository } from "@/features/assistant/storage/memoryRe
 import { createFakeModelAdapter } from "../../fixtures/fakeLanguageModel";
 
 describe("Assistant conversation", () => {
+  it("keeps VoiceOver anchored to the composer until the response is announced", async () => {
+    const user = userEvent.setup();
+    const { adapter } = createFakeModelAdapter({
+      chunks: ["Accessible response."],
+      createDelayMs: 80,
+    });
+    render(
+      <AssistantWorkspace
+        adapter={adapter}
+        repository={new MemoryAssistantRepository()}
+      />,
+    );
+
+    const composer = await screen.findByLabelText("Message the local assistant");
+    await user.type(composer, "Keep focus stable{enter}");
+
+    expect(await screen.findByText("Preparing your message")).toBeVisible();
+    expect(screen.getByLabelText("Message the local assistant")).toBe(composer);
+    expect(composer).toHaveFocus();
+    expect(
+      await screen.findByText("Response complete. Accessible response."),
+    ).toHaveClass("sr-only");
+  });
+
+  it("announces completed Markdown as plain text", async () => {
+    const user = userEvent.setup();
+    const { adapter } = createFakeModelAdapter({
+      chunks: [
+        "## Helpful answer\n\nUse **bold**, _emphasis_, and [named links](https://example.com).",
+      ],
+    });
+    render(
+      <AssistantWorkspace
+        adapter={adapter}
+        repository={new MemoryAssistantRepository()}
+      />,
+    );
+
+    await user.type(
+      await screen.findByLabelText("Message the local assistant"),
+      "Use formatting{enter}",
+    );
+
+    expect(
+      await screen.findByText(
+        "Response complete. Helpful answer Use bold, emphasis, and named links.",
+      ),
+    ).toHaveClass("sr-only");
+  });
+
   it("sends multi-line turns, keeps visible lifecycle feedback, and starts a new chat", async () => {
     const user = userEvent.setup();
     const repository = new MemoryAssistantRepository();
@@ -23,8 +73,13 @@ describe("Assistant conversation", () => {
     expect(await screen.findByText("A local answer.")).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent(/complete/i);
     expect(
-      screen.getByText((_, element) => element?.textContent === "First line\nSecond line"),
-    ).toBeInTheDocument();
+      screen.getByText("Response complete. A local answer."),
+    ).toHaveClass("sr-only");
+    const userMessage = screen.getByText(
+      (_, element) => element?.textContent === "First line\nSecond line",
+    );
+    expect(userMessage).toBeInTheDocument();
+    expect(userMessage).toHaveClass("min-w-0", "break-words");
 
     await user.type(screen.getByLabelText("Message the local assistant"), "Follow up");
     await user.click(screen.getByRole("button", { name: "Send message" }));

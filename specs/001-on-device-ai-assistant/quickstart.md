@@ -67,7 +67,7 @@ Acceptance: [context interface](./contracts/assistant-workspace.md#context-inter
 
 1. Complete safe Markdown styling, copy feedback, responsive session drawer, follow-scroll, focus restoration, reduced motion, and assistive status behavior.
 2. Complete unit/component and production-build Playwright coverage.
-3. Run the real-model timing, quality, retention, usability, and disclosure gates on the owner Mac.
+3. Run the real-model timing, quality, context-retention, accessibility, and no-egress gates on the owner Mac.
 
 Acceptance: [evaluation contract](./contracts/evaluation.md).
 

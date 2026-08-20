@@ -62,7 +62,7 @@ specs/001-on-device-ai-assistant/
 ├── data-model.md
 ├── quickstart.md
 ├── evaluation.md              # Fixed real-model evaluation fixtures (T071)
-├── validation.md              # Release evidence record (T072–T075)
+├── validation.md              # Release evidence record (T072–T074)
 ├── contracts/
 │   ├── assistant-workspace.md
 │   ├── evaluation.md
@@ -152,4 +152,4 @@ vitest.config.ts
 1. **Local turn**: `/assistant` can distinguish unsupported, downloadable, preparing, ready, streaming, stopped, and failed states; a ready environment completes or stops one prompt without a server request.
 2. **Local history**: a completed conversation restores after reload; two windows preserve and serially answer submitted turns; deletion and Clear all cannot be reversed by a stale generation; storage failure visibly enters “Not saved” mode.
 3. **Context control**: personality guidance persists globally, the context meter reports known or unknown state honestly, warning and compaction thresholds are deterministic, and a failed compaction leaves the prior working context intact.
-4. **Release evidence**: automated browser flows pass at representative desktop and mobile sizes with keyboard and accessibility checks, and the manual owner-Mac run satisfies SC-003 and SC-004 without broadening the compatibility claim.
+4. **Release evidence**: automated browser flows pass at representative desktop and mobile sizes with keyboard and accessibility checks, and the manual owner-Mac run satisfies SC-002 and SC-003 without broadening the compatibility claim.

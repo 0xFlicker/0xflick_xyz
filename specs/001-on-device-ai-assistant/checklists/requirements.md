@@ -32,5 +32,5 @@
 ## Notes
 
 - Validation iteration 1 passed all checklist items.
-- The specification contains five independently testable user stories, 47 functional requirements, 12 measurable outcomes, explicit scope boundaries, key entities, assumptions, dependencies, and edge cases.
+- The specification contains five independently testable user stories, 48 functional requirements, 9 measurable outcomes, explicit scope boundaries, key entities, assumptions, dependencies, and edge cases.
 - No clarification marker blocks the next workflow phase. `$speckit-clarify` remains recommended to challenge the chosen defaults before implementation planning.
