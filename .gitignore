@@ -2,12 +2,15 @@
 
 # dependencies
 /node_modules
+dist/
 /.pnp
 .pnp.js
 .yarn/install-state.gz
 
 # testing
 /coverage
+/playwright-report
+/test-results
 
 # next.js
 /.next/
@@ -21,6 +24,11 @@
 
 # misc
 .DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
 *.pem
 
 # debug
@@ -29,7 +37,9 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env*.local
+.env*
+!.env.development
+!.env.production
 
 # vercel
 .vercel

@@ -1,0 +1,72 @@
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
+
+import { ContextDetails } from "@/features/assistant/components/ContextDetails";
+import type { ContextState } from "@/features/assistant/types";
+import { toSessionId, toTurnId } from "@/features/assistant/types";
+
+function context(state: ContextState["state"], usage: number | null): ContextState {
+  return {
+    sessionId: toSessionId("session"),
+    epoch: 0,
+    state,
+    summaryText: state === "compacted" ? "Older facts retained." : null,
+    summarizedThroughTurnId: state === "compacted" ? toTurnId("turn-2") : null,
+    directFromTurnId: state === "compacted" ? toTurnId("turn-3") : null,
+    contextUsage: usage,
+    contextWindow: usage === null ? null : 100,
+    promptVersion: 1,
+    sourceHistoryRevision: 4,
+    personalityRevision: 0,
+    compactedAt: state === "compacted" ? 100 : null,
+    overflowedAt: state === "overflowed" ? 101 : null,
+  };
+}
+
+describe("ContextDetails", () => {
+  it("labels a measured percentage as context used", () => {
+    render(
+      <ContextDetails
+        canCompact={false}
+        context={context("fresh", 2)}
+        onCompact={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Context used")).toBeVisible();
+    expect(screen.getByRole("progressbar", { name: "Conversation context usage" })).toHaveValue(
+      2,
+    );
+  });
+
+  it("pairs its visual meter with text and exposes inspectable compaction details", async () => {
+    const user = userEvent.setup();
+    render(
+      <ContextDetails
+        canCompact
+        context={context("warning", 75)}
+        onCompact={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Nearing context limit")).toBeVisible();
+    expect(screen.getByRole("progressbar", { name: "Conversation context usage" })).toHaveValue(
+      75,
+    );
+    await user.click(screen.getByRole("button", { name: "Context details" }));
+    expect(screen.getByText(/older detail may soon be condensed/i)).toBeVisible();
+    expect(screen.getByRole("button", { name: "Compact now" })).toBeVisible();
+  });
+
+  it("labels unknown and overflowed capacity without inventing a percentage", () => {
+    const { rerender } = render(
+      <ContextDetails canCompact={false} context={context("unknown", null)} onCompact={vi.fn()} />,
+    );
+    expect(screen.getByText("Context unknown")).toBeVisible();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    rerender(
+      <ContextDetails canCompact context={context("overflowed", 100)} onCompact={vi.fn()} />,
+    );
+    expect(screen.getByText("Context overflowed")).toBeVisible();
+  });
+});
