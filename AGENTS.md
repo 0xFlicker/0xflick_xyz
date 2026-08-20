@@ -19,6 +19,22 @@
 - `yarn start` — serve the production build.
 - `yarn lint` — run ESLint (next/core-web-vitals preset).
 
+## Spec Kit Workflow
+
+- `.specify/memory/constitution.md` is the highest-authority engineering policy for this project.
+- Use `$speckit-assess-intake` before specification when a product idea still needs evidence,
+  problem definition, scope shaping, or a go/no-go decision.
+- The normal feature cycle is `$speckit-specify` → `$speckit-clarify` → `$speckit-plan` →
+  `$speckit-tasks` → `$speckit-analyze` → `$speckit-implement` → `$speckit-converge`.
+- Feature artifacts live under `specs/NNN-short-name/`. The machine-local
+  `.specify/feature.json` pointer identifies the active feature independently of the Git branch.
+- The Git extension creates a numbered feature branch before `$speckit-specify`. Preserve existing
+  dirty-checkout work by asking whether to commit first or continue in place before invoking it.
+- The agent-context extension owns only the section delimited by `<!-- SPECKIT START -->` and
+  `<!-- SPECKIT END -->`. Do not hand-edit content inside those markers.
+- After task generation, `$speckit-analyze` runs as a mandatory consistency gate. After
+  implementation, `$speckit-converge` runs as a mandatory completion audit.
+
 ## Architecture
 
 ### Routing
