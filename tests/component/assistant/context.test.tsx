@@ -40,7 +40,7 @@ describe("ContextDetails", () => {
     );
   });
 
-  it("pairs its visual meter with text and exposes inspectable compaction details", async () => {
+  it("explains high usage without exposing implementation details", async () => {
     const user = userEvent.setup();
     render(
       <ContextDetails
@@ -54,8 +54,31 @@ describe("ContextDetails", () => {
       75,
     );
     await user.click(screen.getByRole("button", { name: "Context details" }));
-    expect(screen.getByText(/older detail may soon be condensed/i)).toBeVisible();
+    expect(screen.getByText("75% used")).toBeVisible();
+    expect(screen.getByText(/older messages will be condensed automatically/i)).toBeVisible();
+    expect(screen.getByText(/visible chat history stays unchanged/i)).toBeVisible();
+    expect(screen.queryByText("Fixed assistant guidance")).not.toBeInTheDocument();
+    expect(screen.queryByText("Personality preference")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Compact now" })).toBeVisible();
+  });
+
+  it("keeps the generated compacted summary behind a disclosure", async () => {
+    const user = userEvent.setup();
+    render(
+      <ContextDetails
+        canCompact
+        context={context("compacted", 48)}
+        onCompact={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Context details" }));
+    expect(screen.getByText("48% used")).toBeVisible();
+    expect(screen.getByText(/older messages were condensed to make room/i)).toBeVisible();
+    expect(screen.queryByText("Older facts retained.")).not.toBeVisible();
+
+    await user.click(screen.getByText("See condensed summary"));
+    expect(screen.getByText("Older facts retained.")).toBeVisible();
   });
 
   it("labels unknown and overflowed capacity without inventing a percentage", () => {

@@ -110,15 +110,10 @@ Destructive actions abort relevant local model work before attempting persistenc
 - Once the local model is ready and the chat has at least one turn, the conversation header provides a compact visual meter and equivalent text: `Context unknown`, `Context used`, `Nearing context limit`, `Compacted`, or `Context overflowed`. Before the first turn, or before the model is ready, the context control is omitted because no conversation context is expected yet.
 - Known percentage is derived from paired browser measurements. It is not estimated from character count.
 - At 75% or more, a persistent warning explains that older detail may soon be condensed but does not block the current turn.
-- At a projected 80% or more, the accepted turn shows `Compacting older context` before generation. Visible transcript messages do not move or disappear.
+- At a projected 80% or more, the accepted turn replaces the composer with `Making room for this conversation…`, `Your message will start automatically.`, and `Cancel` before generation. Visible transcript messages do not move or disappear.
 - Compact now is available only when at least one older completed turn can be summarized while retaining recent turns.
-- Context details distinguish:
-  - fixed assistant guidance;
-  - whether a personality preference is active;
-  - the range of older turns represented by a summary;
-  - the recent turns included directly;
-  - last successful compaction and any browser overflow.
-- The generated summary may be shown in plain language, clearly labelled as AI-generated context, without presenting it as the original transcript.
+- The context dialog leads with only the measured percentage or unavailable state, the immediate consequence, the invariant that visible chat history is unchanged, and any available action. Prompt layers, turn ranges, and timestamps are not primary interface content.
+- When a generated summary exists, it is available behind a `See condensed summary` disclosure, clearly labelled as AI-generated and visually contained so long output cannot dominate the dialog or be mistaken for the original transcript.
 - Failed compaction restores the prior committed state, says generation did not proceed with verified full context, and offers retry, a smaller prompt, or New chat.
 - A browser `contextoverflow` event changes state to overflowed immediately and blocks the next turn until a compacted rebuild succeeds.
 

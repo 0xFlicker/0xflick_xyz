@@ -32,9 +32,9 @@ function workText(state: AssistantState["work"]): string | null {
     case "queued":
       return "Response queued";
     case "checking_context":
-      return "Checking conversation context";
+      return "Preparing your message";
     case "compacting":
-      return "Compacting older context";
+      return "Making room for this conversation";
     case "generating":
       return state.hasContent ? "Response started" : "Generating response";
     case "completed":

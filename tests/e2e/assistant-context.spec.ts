@@ -78,6 +78,7 @@ test("manually compacts older turns without changing or losing the transcript", 
   }
   await page.reload();
   await page.getByRole("button", { name: "Context details" }).click();
+  await page.getByText("See condensed summary").click();
   await expect(page.getByText(/cedar remains selected/i)).toBeVisible();
 });
 
@@ -102,10 +103,19 @@ test("automatically compacts at projected 80% and retains the recent direct turn
       destroy() {}
       measureContextUsage() { return Promise.resolve(4); }
       promptStreaming() {
-        const output = this.summary ? "Automatic summary retained fact amber." : "Automatic local reply.";
+        if (this.summary) {
+          return new ReadableStream<string>({
+            start(controller) {
+              Reflect.set(globalThis, "__finishSummary", () => {
+                controller.enqueue("Automatic summary retained fact amber.");
+                controller.close();
+              });
+            },
+          });
+        }
         return new ReadableStream<string>({
           start(controller) {
-            controller.enqueue(output);
+            controller.enqueue("Automatic local reply.");
             controller.close();
           },
         });
@@ -114,15 +124,32 @@ test("automatically compacts at projected 80% and retains the recent direct turn
     Object.defineProperty(globalThis, "LanguageModel", { configurable: true, value: FakeLanguageModel });
   });
   await page.goto("/assistant");
-  for (let index = 1; index <= 6; index += 1) {
+  for (let index = 1; index <= 5; index += 1) {
     await page.getByLabel("Message the local assistant").fill(`Automatic turn ${index}`);
     await page.getByRole("button", { name: "Send message" }).click();
     await expect(
       page.getByLabel("Conversation transcript").getByText("Automatic local reply."),
     ).toHaveCount(index);
   }
+
+  await page.getByLabel("Message the local assistant").fill("Automatic turn 6");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByText("Making room for this conversation…")).toBeVisible();
+  await expect(page.getByText("Your message will start automatically.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
+  await expect(page.getByLabel("Message the local assistant")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Stop response" })).toHaveCount(0);
+  await page.evaluate(() => {
+    const finishSummary = Reflect.get(globalThis, "__finishSummary");
+    if (typeof finishSummary !== "function") throw new Error("Summary is not waiting");
+    finishSummary();
+  });
+  await expect(
+    page.getByLabel("Conversation transcript").getByText("Automatic local reply."),
+  ).toHaveCount(6);
   expect(await page.evaluate(() => Reflect.get(globalThis, "__summaryCreates"))).toBeGreaterThan(0);
   await page.getByRole("button", { name: "Context details" }).click();
+  await page.getByText("See condensed summary").click();
   await expect(page.getByText(/Automatic summary retained fact amber/i)).toBeVisible();
   for (let index = 1; index <= 6; index += 1) {
     await expect(

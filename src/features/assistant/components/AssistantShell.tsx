@@ -78,9 +78,7 @@ export function AssistantShell({
               <ContextDetails
                 canCompact={canCompact}
                 context={conversation?.context ?? null}
-                conversation={conversation}
                 onCompact={onCompact}
-                personalityActive={personality.text.length > 0}
               />
             ) : null}
             <SettingsDialog onSave={onSavePersonality} personality={personality} />

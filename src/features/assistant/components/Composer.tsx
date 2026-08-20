@@ -19,11 +19,49 @@ export function Composer({
   value,
   work,
 }: ComposerProps) {
-  const generating =
-    work.status === "generating" ||
-    work.status === "checking_context" ||
-    work.status === "compacting";
+  const preparing =
+    work.status === "checking_context" || work.status === "compacting";
+  const generating = work.status === "generating";
   const canSend = !disabled && !generating && value.trim().length > 0;
+
+  if (preparing) {
+    const automatic =
+      work.status === "checking_context" || work.turnId !== null;
+    const activity =
+      work.status === "compacting"
+        ? "Making room for this conversation…"
+        : "Preparing your message…";
+
+    return (
+      <div className="rounded-[1.6rem] border border-zinc-200 bg-white p-2 shadow-[0_18px_60px_-30px_rgba(24,24,27,0.35)] dark:border-white/10 dark:bg-zinc-900">
+        <div className="flex min-h-16 items-center gap-3 px-3 py-2 sm:px-4">
+          <span aria-hidden="true" className="relative flex h-2.5 w-2.5 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-40 motion-reduce:animate-none" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-cyan-500" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-zinc-900 dark:text-white">
+              {activity}
+            </p>
+            <p className="mt-0.5 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+              {automatic
+                ? "Your message will start automatically."
+                : "You can continue when it’s ready."}
+            </p>
+          </div>
+          {automatic ? (
+            <button
+              className="shrink-0 rounded-full border border-zinc-200 px-3 py-2 text-sm font-semibold text-zinc-700 outline-none hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-cyan-500 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/10"
+              onClick={onStop}
+              type="button"
+            >
+              Cancel
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>): void {
     if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
