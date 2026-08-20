@@ -158,11 +158,10 @@ export class BrowserLanguageModelAdapter implements LocalModelAdapter {
         signal,
         monitor(monitor) {
           monitor.addEventListener("downloadprogress", (event) => {
-            const total = event.total > 0 ? event.total : 1;
-            const fraction = Math.min(1, Math.max(0, event.loaded / total));
+            const fraction = Math.min(1, Math.max(0, event.loaded));
             onProgress?.(
               fraction >= 1
-                ? { state: "finalizing" }
+                ? { state: "preparing" }
                 : { state: "downloading", fraction },
             );
           });

@@ -48,9 +48,18 @@ export function AvailabilityPanel({
 
       {environment.status === "downloading" ? (
         <>
-          <h2 className="font-semibold text-zinc-950 dark:text-white">Downloading the on-device model</h2>
+          <h2 className="font-semibold text-zinc-950 dark:text-white">Chrome is downloading the on-device model</h2>
           {environment.fraction === null ? (
-            <p className="mt-2">Chrome has not reported measurable progress yet.</p>
+            <div className="mt-3">
+              <progress
+                aria-label="Model download progress"
+                className="h-2 w-full accent-cyan-600"
+                max={1}
+              />
+              <p className="mt-2 leading-6">
+                This can take several minutes. Chrome may continue if you leave this page.
+              </p>
+            </div>
           ) : (
             <div className="mt-3">
               <progress
@@ -59,17 +68,18 @@ export function AvailabilityPanel({
                 max={1}
                 value={environment.fraction}
               />
-              <p className="mt-1 text-xs">{Math.round(environment.fraction * 100)}% reported</p>
+              <p className="mt-1 text-xs">{Math.floor(environment.fraction * 100)}% downloaded</p>
+              <p className="mt-2 leading-6">Chrome may continue if you leave this page.</p>
             </div>
           )}
           <button className={actionClass} onClick={onStopWaiting} type="button">Stop waiting</button>
         </>
       ) : null}
 
-      {environment.status === "finalizing" ? (
+      {environment.status === "preparing" ? (
         <>
-          <h2 className="font-semibold text-zinc-950 dark:text-white">Download complete; preparing model</h2>
-          <p className="mt-2">Chrome is making the local model ready. No time estimate is available.</p>
+          <h2 className="font-semibold text-zinc-950 dark:text-white">Getting the model ready</h2>
+          <p className="mt-2">The download is complete. Chrome is loading the local model into memory.</p>
           <button className={actionClass} onClick={onStopWaiting} type="button">Stop waiting</button>
         </>
       ) : null}
@@ -82,7 +92,9 @@ export function AvailabilityPanel({
           <p className="mt-2 leading-6">
             {environment.code === "aborted"
               ? "Chrome may continue downloading or preparing its shared model. This page only stopped waiting for it."
-              : "Chrome could not complete this local AI step. Your saved browser history, if any, has not been removed."}
+              : environment.code === "operation_failed"
+                ? "Chrome could not start its local model. Retry detection; if Chrome reports it ready but this repeats, restart Chrome and try again."
+                : "Chrome could not complete this local AI step. Your saved browser history, if any, has not been removed."}
           </p>
           <button className={actionClass} onClick={onRetry} type="button">Retry detection</button>
         </>

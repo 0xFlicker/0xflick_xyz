@@ -17,10 +17,16 @@ import { Composer } from "@/features/assistant/components/Composer";
 import { Transcript } from "@/features/assistant/components/Transcript";
 import {
   ASSISTANT_LOCK_PREFIX,
+  MODEL_AVAILABILITY_POLL_INTERVAL_MS,
+  PROMPT_VERSION,
   STREAM_CHECKPOINT_INTERVAL_MS,
 } from "@/features/assistant/constants";
 import { BrowserLanguageModelAdapter } from "@/features/assistant/model/browserLanguageModel";
 import type { LocalModelAdapter, LocalModelSession } from "@/features/assistant/model/modelAdapter";
+import {
+  ModelSessionCache,
+  modelSessionIdentity,
+} from "@/features/assistant/model/modelSessionCache";
 import { assistantReducer, initialAssistantState } from "@/features/assistant/reducer";
 import { blankPersonality, type AssistantRepository } from "@/features/assistant/storage/repository";
 import { MemoryAssistantRepository } from "@/features/assistant/storage/memoryRepository";
@@ -76,6 +82,7 @@ function errorCode(error: unknown): ModelErrorCode {
       case "unsupported_input":
       case "download_failed":
       case "model_unavailable":
+      case "output_filtered":
       case "context_too_large":
       case "aborted":
       case "operation_failed":
@@ -108,7 +115,7 @@ function measuredContextState(
     directFromTurnId: prior?.directFromTurnId ?? null,
     contextUsage: measurement.usage,
     contextWindow: measurement.window,
-    promptVersion: prior?.promptVersion ?? 1,
+    promptVersion: prior?.promptVersion ?? PROMPT_VERSION,
     sourceHistoryRevision: conversation.session.historyRevision,
     personalityRevision,
     compactedAt: prior?.compactedAt ?? null,
@@ -133,6 +140,7 @@ export function AssistantWorkspace({
       ),
     [providedRepository],
   );
+  const sessionCache = useMemo(() => new ModelSessionCache(), []);
   const [state, dispatch] = useReducer(assistantReducer, initialAssistantState);
   const subscribeSettings = useCallback(
     (listener: (value: SettingsSnapshot) => void) =>
@@ -144,6 +152,7 @@ export function AssistantWorkspace({
   const settings = useRepositoryQuery(emptySettings, subscribeSettings);
   const personality = settings.personality;
   const [draft, setDraft] = useState("");
+  const [setupPending, setSetupPending] = useState(false);
   const [sessions, setSessions] = useState<SessionListSnapshot>(emptySessions);
   const [conversation, setConversation] = useState<ConversationSnapshot | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<SessionId | null>(null);
@@ -155,6 +164,7 @@ export function AssistantWorkspace({
   const activeRef = useRef<ActiveGeneration | null>(null);
   const setupRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
+  const selectedSessionIdRef = useRef<SessionId | null>(null);
 
   const syncStorageMode = useCallback((): void => {
     if (repository.mode() === "temporary") {
@@ -188,32 +198,39 @@ export function AssistantWorkspace({
 
   const recheckAvailability = useCallback(async (): Promise<void> => {
     setupRef.current?.abort();
+    setupRef.current = null;
+    setSetupPending(false);
     dispatch({ type: "environment/checking" });
     try {
       const availability = await adapter.availability();
       if (mountedRef.current) {
+        if (availability.state !== "available") sessionCache.clear();
         dispatch({ type: "environment/availability", availability });
       }
     } catch (error) {
+      sessionCache.clear();
       if (mountedRef.current) {
         dispatch({ type: "environment/failed", code: errorCode(error) });
       }
     }
-  }, [adapter]);
+  }, [adapter, sessionCache]);
 
   const prepareModel = useCallback((): void => {
     const abort = new AbortController();
+    const identity = modelSessionIdentity(conversation, personality.revision);
     setupRef.current?.abort();
+    sessionCache.clear();
     setupRef.current = abort;
+    setSetupPending(true);
     dispatch({ type: "environment/progress", fraction: null });
 
     const creation = adapter.create(
-      buildReconstructionPrompts({ conversation: null, personality }),
+      buildReconstructionPrompts({ conversation, personality }),
       abort.signal,
       (progress) => {
         if (abort.signal.aborted || setupRef.current !== abort) return;
-        if (progress.state === "finalizing") {
-          dispatch({ type: "environment/finalizing" });
+        if (progress.state === "preparing") {
+          dispatch({ type: "environment/preparing" });
         } else {
           dispatch({ type: "environment/progress", fraction: progress.fraction });
         }
@@ -222,18 +239,86 @@ export function AssistantWorkspace({
 
     void creation
       .then((session) => {
-        session.destroy();
-        if (abort.signal.aborted || setupRef.current !== abort) return;
+        if (abort.signal.aborted || setupRef.current !== abort) {
+          session.destroy();
+          return;
+        }
         setupRef.current = null;
+        setSetupPending(false);
+        sessionCache.store(identity, session);
         dispatch({ type: "environment/ready" });
       })
-      .catch((error) => {
-        if (setupRef.current === abort) setupRef.current = null;
-        if (mountedRef.current) {
-          dispatch({ type: "environment/failed", code: errorCode(error) });
+      .catch(async (error) => {
+        if (setupRef.current === abort) {
+          setupRef.current = null;
+          setSetupPending(false);
         }
+        if (!mountedRef.current || abort.signal.aborted) return;
+        try {
+          const availability = await adapter.availability();
+          if (!mountedRef.current) return;
+          if (availability.state === "downloading") {
+            dispatch({ type: "environment/availability", availability });
+            return;
+          }
+        } catch (availabilityError) {
+          if (mountedRef.current) {
+            dispatch({ type: "environment/failed", code: errorCode(availabilityError) });
+          }
+          return;
+        }
+        if (mountedRef.current) dispatch({ type: "environment/failed", code: errorCode(error) });
       });
-  }, [adapter, personality]);
+  }, [adapter, conversation, personality, sessionCache]);
+
+  useEffect(() => {
+    if (state.environment.status !== "downloading" || setupPending) return;
+    let active = true;
+    let checking = false;
+    let timer: number | null = null;
+
+    const schedule = (): void => {
+      if (!active) return;
+      timer = window.setTimeout(
+        () => void checkAvailability(),
+        MODEL_AVAILABILITY_POLL_INTERVAL_MS,
+      );
+    };
+
+    const checkAvailability = async (): Promise<void> => {
+      if (!active || checking) return;
+      checking = true;
+      try {
+        const availability = await adapter.availability();
+        if (!active) return;
+        if (availability.state === "downloading") {
+          schedule();
+        } else {
+          if (availability.state !== "available") sessionCache.clear();
+          dispatch({ type: "environment/availability", availability });
+        }
+      } catch (error) {
+        if (active) dispatch({ type: "environment/failed", code: errorCode(error) });
+      } finally {
+        checking = false;
+      }
+    };
+
+    const checkWhenVisible = (): void => {
+      if (document.visibilityState !== "visible") return;
+      if (timer !== null) window.clearTimeout(timer);
+      timer = null;
+      void checkAvailability();
+    };
+
+    schedule();
+    document.addEventListener("visibilitychange", checkWhenVisible);
+    return () => {
+      active = false;
+      if (timer !== null) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", checkWhenVisible);
+    };
+  }, [adapter, sessionCache, setupPending, state.environment.status]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -251,6 +336,7 @@ export function AssistantWorkspace({
       if (!active) return;
       setSessions(initial.sessions);
       setSelectedSessionId(initial.sessions.activeSessionId);
+      selectedSessionIdRef.current = initial.sessions.activeSessionId;
       setConversation(initial.conversation);
       if (repository.mode() === "durable") {
         dispatch({ type: "storage/durable" });
@@ -269,12 +355,14 @@ export function AssistantWorkspace({
       active = false;
       mountedRef.current = false;
       setupRef.current?.abort();
+      setupRef.current = null;
       activeRef.current?.abort.abort();
       activeRef.current?.session?.destroy();
+      sessionCache.clear();
       unsubscribeSessions();
       repository.destroy();
     };
-  }, [recheckAvailability, repository]);
+  }, [recheckAvailability, repository, sessionCache]);
 
   useEffect(() => {
     if (!selectedSessionId) {
@@ -299,6 +387,12 @@ export function AssistantWorkspace({
       unsubscribe();
     };
   }, [repository, selectedSessionId]);
+
+  useEffect(() => {
+    sessionCache.invalidateUnless(
+      modelSessionIdentity(conversation, personality.revision),
+    );
+  }, [conversation, personality.revision, sessionCache]);
 
   const processOneTurn = useCallback(
     async (sessionId: SessionId, epoch: number): Promise<boolean> => {
@@ -330,6 +424,7 @@ export function AssistantWorkspace({
       try {
         const currentAvailability = await adapter.availability();
         if (currentAvailability.state !== "available") {
+          sessionCache.clear();
           dispatch({ type: "environment/availability", availability: currentAvailability });
           throw new Error("model_unavailable");
         }
@@ -341,28 +436,28 @@ export function AssistantWorkspace({
         );
         if (!userMessage) throw new Error("operation_failed");
 
-        let modelSession = await adapter.create(
-          buildReconstructionPrompts({
-            conversation: latestConversation,
-            personality: currentPersonality,
-          }),
-          abort.signal,
-          (progress) => {
-            if (!mountedRef.current || activeRef.current !== active) return;
-            if (progress.state === "finalizing") {
-              dispatch({ type: "environment/finalizing" });
-            } else {
-              dispatch({ type: "environment/progress", fraction: progress.fraction });
-            }
-          },
+        const identity = modelSessionIdentity(
+          latestConversation,
+          currentPersonality.revision,
         );
+        let modelSession = sessionCache.take(identity);
+        if (!modelSession) {
+          modelSession = await adapter.create(
+            buildReconstructionPrompts({
+              conversation: latestConversation,
+              personality: currentPersonality,
+            }),
+            abort.signal,
+          );
+        }
         active.session = modelSession;
         if (abort.signal.aborted) {
           modelSession.destroy();
           throw new DOMException("The operation was aborted", "AbortError");
         }
         active.overflowed = latestConversation.context?.state === "overflowed";
-        active.unsubscribeOverflow = modelSession.onOverflow(() => {
+        const overflowSession = modelSession;
+        active.unsubscribeOverflow = overflowSession.onOverflow(() => {
           if (activeRef.current !== active) return;
           active.overflowed = true;
           void (async () => {
@@ -370,7 +465,7 @@ export function AssistantWorkspace({
             if (!overflowConversation || activeRef.current !== active) return;
             await persistContextMeasurement(
               overflowConversation,
-              modelSession.context(),
+              overflowSession.context(),
               currentPersonality.revision,
               true,
             );
@@ -407,16 +502,11 @@ export function AssistantWorkspace({
           if (!compacted.ok) throw new Error(compacted.code);
           latestConversation = await repository.getConversation(sessionId);
           if (!latestConversation) throw new Error("operation_failed");
-          modelSession = await adapter.create(
-            buildReconstructionPrompts({
-              conversation: latestConversation,
-              personality: currentPersonality,
-            }),
-            abort.signal,
-          );
+          modelSession = compacted.session;
           active.session = modelSession;
           active.overflowed = false;
-          active.unsubscribeOverflow = modelSession.onOverflow(() => {
+          const replacementOverflowSession = modelSession;
+          active.unsubscribeOverflow = replacementOverflowSession.onOverflow(() => {
             if (activeRef.current !== active) return;
             active.overflowed = true;
             void (async () => {
@@ -424,7 +514,7 @@ export function AssistantWorkspace({
               if (!overflowConversation || activeRef.current !== active) return;
               await persistContextMeasurement(
                 overflowConversation,
-                modelSession.context(),
+                replacementOverflowSession.context(),
                 currentPersonality.revision,
                 true,
               );
@@ -464,7 +554,7 @@ export function AssistantWorkspace({
 
         if (abort.signal.aborted) throw new DOMException("The operation was aborted", "AbortError");
         if (active.lastText.length === 0) throw new Error("empty_response");
-        await repository.finishTurn({
+        const finishResult = await repository.finishTurn({
           at: Date.now(),
           attemptId,
           epoch,
@@ -473,6 +563,11 @@ export function AssistantWorkspace({
           text: active.lastText,
           turnId: claimed.turnId,
         });
+        if (!finishResult.ok) {
+          throw new Error(
+            finishResult.code === "already_terminal" ? "aborted" : "operation_failed",
+          );
+        }
         let completedConversation = await repository.getConversation(sessionId);
         if (completedConversation) {
           await persistContextMeasurement(
@@ -484,8 +579,20 @@ export function AssistantWorkspace({
           completedConversation = await repository.getConversation(sessionId);
         }
         if (activeRef.current === active) setConversation(completedConversation);
+        if (
+          completedConversation &&
+          selectedSessionIdRef.current === sessionId &&
+          activeRef.current === active
+        ) {
+          sessionCache.store(
+            modelSessionIdentity(completedConversation, currentPersonality.revision),
+            modelSession,
+          );
+          active.session = null;
+        }
         if (mountedRef.current) dispatch({ type: "work/completed" });
       } catch (error) {
+        sessionCache.clear();
         const code = errorCode(error);
         if (code === "aborted") {
           await repository.finishTurn({
@@ -525,7 +632,7 @@ export function AssistantWorkspace({
       }
       return true;
     },
-    [adapter, persistContextMeasurement, repository, syncStorageMode],
+    [adapter, persistContextMeasurement, repository, sessionCache, syncStorageMode],
   );
 
   const processAcceptedTurn = useCallback(
@@ -560,6 +667,7 @@ export function AssistantWorkspace({
         });
         setDraft("");
         setSelectedSessionId(accepted.sessionId);
+        selectedSessionIdRef.current = accepted.sessionId;
         await repository.selectSession(accepted.sessionId, Date.now());
         dispatch({ type: "work/queued", turnId: accepted.turnId });
         await processAcceptedTurn(accepted.sessionId, accepted.epoch);
@@ -586,6 +694,7 @@ export function AssistantWorkspace({
         return;
       }
       dispatch({ type: "work/compacting", turnId: null });
+      sessionCache.clear();
       const currentPersonality = (await repository.getSettings()).personality;
       const result = await compactConversation({
         adapter,
@@ -594,8 +703,20 @@ export function AssistantWorkspace({
         repository,
       });
       syncStorageMode();
-      setConversation(await repository.getConversation(selectedSessionId));
+      const updatedConversation = await repository.getConversation(selectedSessionId);
+      setConversation(updatedConversation);
       if (result.ok) {
+        if (
+          updatedConversation &&
+          selectedSessionIdRef.current === selectedSessionId
+        ) {
+          sessionCache.store(
+            modelSessionIdentity(updatedConversation, currentPersonality.revision),
+            result.session,
+          );
+        } else {
+          result.session.destroy();
+        }
         dispatch({ type: "work/completed" });
       } else {
         dispatch({ type: "work/failed", code: errorCode(new Error(result.code)) });
@@ -610,15 +731,21 @@ export function AssistantWorkspace({
     } else {
       await run();
     }
-  }, [adapter, repository, selectedSessionId, syncStorageMode]);
+  }, [adapter, repository, selectedSessionId, sessionCache, syncStorageMode]);
 
   const savePersonality = useCallback(
     async (text: string) => {
       const result = await repository.savePersonality(text, Date.now());
+      if (result.ok) {
+        setupRef.current?.abort();
+        setupRef.current = null;
+        setSetupPending(false);
+        sessionCache.clear();
+      }
       syncStorageMode();
       return result;
     },
-    [repository, syncStorageMode],
+    [repository, sessionCache, syncStorageMode],
   );
 
   function newChat(): void {
@@ -626,7 +753,13 @@ export function AssistantWorkspace({
     if (active) {
       active.reason = "session_switched";
       active.abort.abort();
+      active.session?.destroy();
     }
+    setupRef.current?.abort();
+    setupRef.current = null;
+    setSetupPending(false);
+    sessionCache.clear();
+    selectedSessionIdRef.current = null;
     setSelectedSessionId(null);
     setConversation(null);
     setDraft("");
@@ -635,11 +768,18 @@ export function AssistantWorkspace({
   }
 
   function selectSession(sessionId: SessionId): void {
+    if (selectedSessionIdRef.current === sessionId) return;
     const active = activeRef.current;
     if (active && active.sessionId !== sessionId) {
       active.reason = "session_switched";
       active.abort.abort();
+      active.session?.destroy();
     }
+    setupRef.current?.abort();
+    setupRef.current = null;
+    setSetupPending(false);
+    sessionCache.clear();
+    selectedSessionIdRef.current = sessionId;
     setSelectedSessionId(sessionId);
     void repository.selectSession(sessionId, Date.now());
   }
@@ -656,7 +796,11 @@ export function AssistantWorkspace({
     const pending = confirmation;
     if (!pending) return;
     activeRef.current?.abort.abort();
+    activeRef.current?.session?.destroy();
     setupRef.current?.abort();
+    setupRef.current = null;
+    setSetupPending(false);
+    sessionCache.clear();
 
     const result =
       pending.kind === "clear"
@@ -671,6 +815,7 @@ export function AssistantWorkspace({
     const next = await repository.getSessions();
     setSessions(next);
     setSelectedSessionId(next.activeSessionId);
+    selectedSessionIdRef.current = next.activeSessionId;
     setConversation(
       next.activeSessionId
         ? await repository.getConversation(next.activeSessionId)
@@ -714,20 +859,25 @@ export function AssistantWorkspace({
       <Transcript conversation={conversation} onRetry={retry} />
       <footer className="shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-8 lg:px-12">
         <div className="mx-auto max-w-3xl">
-          {state.work.status === "failed" ? (
+          {ready && state.work.status === "failed" ? (
             <p
               className="mb-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-100"
               role="alert"
             >
               {state.work.code === "context_too_large"
                 ? "Generation did not proceed with verified full context. Compact this chat, shorten the prompt, or start a new chat."
-                : "The local assistant could not complete that response. Retry it, edit the prompt, or start a new chat."}
+                : state.work.code === "output_filtered"
+                  ? "Chrome did not return that response, possibly because its built-in safety checks blocked the output. Rephrase the prompt or start a new chat."
+                  : "The local assistant could not complete that response. Retry it, edit the prompt, or start a new chat."}
             </p>
           ) : null}
           {ready ? (
             <Composer
               onChange={setDraft}
-              onStop={() => activeRef.current?.abort.abort()}
+              onStop={() => {
+                activeRef.current?.abort.abort();
+                activeRef.current?.session?.destroy();
+              }}
               onSubmit={() => void submit(draft)}
               value={draft}
               work={state.work}
@@ -740,6 +890,7 @@ export function AssistantWorkspace({
               onStopWaiting={() => {
                 const setup = setupRef.current;
                 setupRef.current = null;
+                setSetupPending(false);
                 setup?.abort();
                 dispatch({ type: "environment/failed", code: "aborted" });
               }}

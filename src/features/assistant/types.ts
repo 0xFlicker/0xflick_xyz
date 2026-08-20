@@ -70,6 +70,7 @@ export type ModelErrorCode =
   | "unsupported_input"
   | "download_failed"
   | "model_unavailable"
+  | "output_filtered"
   | "context_too_large"
   | "aborted"
   | "operation_failed"
@@ -249,7 +250,7 @@ export type ModelAvailability =
 
 export type ModelProgress =
   | { state: "downloading"; fraction: number }
-  | { state: "finalizing" };
+  | { state: "preparing" };
 
 export interface ModelContext {
   usage: number | null;
@@ -265,7 +266,7 @@ export type EnvironmentState =
   | { status: "unavailable" }
   | { status: "downloadable" }
   | { status: "downloading"; fraction: number | null }
-  | { status: "finalizing" }
+  | { status: "preparing" }
   | { status: "ready" }
   | { status: "failed"; code: ModelErrorCode };
 

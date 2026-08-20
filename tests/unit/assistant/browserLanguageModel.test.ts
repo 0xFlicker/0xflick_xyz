@@ -11,6 +11,16 @@ class FakeMonitor extends EventTarget {
     null;
 }
 
+function normalizedProgressEvent(loaded: number): ProgressEvent {
+  const event = new ProgressEvent("downloadprogress", {
+    lengthComputable: true,
+    loaded: 0,
+    total: 10,
+  });
+  Object.defineProperty(event, "loaded", { configurable: true, value: loaded });
+  return event;
+}
+
 class NativeLanguageModel extends EventTarget {
   static availabilityValue: Availability = "available";
   static availabilityOptions: LanguageModelCreateCoreOptions | undefined;
@@ -27,12 +37,8 @@ class NativeLanguageModel extends EventTarget {
     if (options?.monitor) {
       const monitor = new FakeMonitor();
       options.monitor(monitor);
-      monitor.dispatchEvent(
-        new ProgressEvent("downloadprogress", { lengthComputable: true, loaded: 1, total: 2 }),
-      );
-      monitor.dispatchEvent(
-        new ProgressEvent("downloadprogress", { lengthComputable: true, loaded: 2, total: 2 }),
-      );
+      monitor.dispatchEvent(normalizedProgressEvent(0.5));
+      monitor.dispatchEvent(normalizedProgressEvent(1));
     }
     this.instance = new NativeLanguageModel();
     return this.instance;
@@ -104,7 +110,7 @@ describe("BrowserLanguageModelAdapter", () => {
     await expect(adapter.availability()).resolves.toEqual({ state: "unavailable" });
   });
 
-  it("creates with exact options, distinguishes finalization, normalizes streams, and destroys once", async () => {
+  it("creates with exact options, distinguishes preparation, normalizes streams, and destroys once", async () => {
     const adapter = new BrowserLanguageModelAdapter();
     const progress = vi.fn();
     const session = await adapter.create(
@@ -117,7 +123,7 @@ describe("BrowserLanguageModelAdapter", () => {
       LANGUAGE_MODEL_OPTIONS.expectedInputs,
     );
     expect(progress).toHaveBeenNthCalledWith(1, { state: "downloading", fraction: 0.5 });
-    expect(progress).toHaveBeenNthCalledWith(2, { state: "finalizing" });
+    expect(progress).toHaveBeenNthCalledWith(2, { state: "preparing" });
     expect(await session.measure("hello")).toEqual({ usage: 23, window: 128 });
 
     const chunks: string[] = [];
@@ -133,7 +139,7 @@ describe("BrowserLanguageModelAdapter", () => {
     ["NotAllowedError", "activation_required"],
     ["NotSupportedError", "unsupported_input"],
     ["NetworkError", "download_failed"],
-    ["NotReadableError", "model_unavailable"],
+    ["NotReadableError", "output_filtered"],
     ["QuotaExceededError", "context_too_large"],
     ["AbortError", "aborted"],
     ["OperationError", "operation_failed"],

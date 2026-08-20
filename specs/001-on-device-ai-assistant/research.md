@@ -20,9 +20,9 @@
 
 ## 2. Availability and Model Preparation
 
-**Decision**: Model the reported availability values `unavailable`, `downloadable`, `downloading`, and `available`, plus application states for checking, finalizing, ready, and failure. For any state that can require a download, invoke `LanguageModel.create()` directly from the visitor's activation handler and attach a normalized `downloadprogress` monitor. Treat progress reaching 100% as “download complete, preparing model” until creation actually resolves.
+**Decision**: Model the reported availability values `unavailable`, `downloadable`, `downloading`, and `available`, plus application states for checking, preparing, ready, and failure. Capture availability before creation and expose the `downloadprogress` monitor as download UI only when that result was `downloadable` or `downloading`. Invoke first-time `LanguageModel.create()` directly from the visitor's activation handler. Treat `event.loaded` as the normalized fraction; show an indeterminate download at zero and switch to indeterminate preparation at one until creation resolves. When a download continues after the page's creation promise settles, poll `availability()` with bounded backoff and on foreground return because the API exposes no availability-change event.
 
-**Rationale**: A model download needs transient user activation. Awaiting unrelated work before `create()` risks `NotAllowedError`. Chrome's progress is normalized and may be privacy-masked, so byte counts and completion-time estimates would be false precision. Aborting creation stops the application's wait but may not stop Chrome's underlying download; UI copy must say “Stop waiting” rather than promising “Cancel download.”
+**Rationale**: A model download needs transient user activation. Awaiting unrelated work before `create()` risks `NotAllowedError`. Chrome's shared creation algorithm also emits synthetic zero/one progress events while initializing an already-downloaded model, so monitor events alone do not prove network activity. Chrome's progress is normalized, relative to remaining material, and may be privacy-masked, so byte counts, a frozen numeric zero, and completion-time estimates would be false precision. Aborting creation stops the application's wait but may not stop Chrome's underlying download; UI copy must say “Stop waiting” rather than promising “Cancel download.”
 
 **Alternatives considered**:
 
@@ -33,14 +33,14 @@
 
 ## 3. Model Session and Streaming Boundary
 
-**Decision**: Define a feature-local model adapter with availability, prepare/create, reconstruct, stream, context measurement, and destroy operations. Prefer `promptStreaming()` with an `AbortController`, map known `DOMException.name` values to stable application errors, and destroy a live model session whenever its conversation is switched, deleted, rebuilt, or abandoned.
+**Decision**: Define a feature-local model adapter with availability, prepare/create, stream, context measurement, and destroy operations. Prefer `promptStreaming()` with an `AbortController` and map known `DOMException.name` values to stable application errors. Retain at most one native session per window for the selected chat after successful preparation or generation. Key reuse to the persisted session history revision, compacted-context identity, fixed prompt version, and personality revision. Destroy and reconstruct on mismatch, interruption, failure, session switch, personality change, compaction replacement, deletion, Clear all, model unavailability, or unmount.
 
-**Rationale**: The adapter makes the experimental global replaceable by deterministic fakes in tests without adding a second production runtime. Streaming provides useful activity feedback. Explicit destruction releases browser-managed resources and prevents stale sessions from continuing after storage or context state changes.
+**Rationale**: The adapter makes the experimental global replaceable by deterministic fakes in tests without adding a second production runtime. Streaming provides useful activity feedback. Chrome notes that session creation can take time and recommends retaining sessions that will be prompted again. A single revision-keyed retained session improves follow-up latency without persisting a native object or keeping one resource-heavy runtime per saved chat. Explicit invalidation keeps IndexedDB authoritative across windows and prevents stale sessions from continuing after storage or context changes.
 
 **Alternatives considered**:
 
 - Direct `LanguageModel` calls throughout components were rejected because they couple UI, lifecycle, and draft API details.
-- A permanently live model object for every saved session was rejected because browser-managed model sessions consume resources and cannot be serialized.
+- A permanently live model object for every saved session was rejected because browser-managed model sessions consume resources and cannot be serialized; only the selected chat may retain one.
 - Vercel AI SDK and server routes were rejected because generation is local and no server transport is required.
 
 **Primary sources**: [Chrome prompting and cancellation](https://developer.chrome.com/docs/ai/prompt-api#prompt-the-model), [Chrome session management](https://developer.chrome.com/docs/ai/session-management)

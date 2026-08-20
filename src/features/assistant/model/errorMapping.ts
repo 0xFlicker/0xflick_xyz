@@ -22,7 +22,7 @@ export function normalizeModelError(error: unknown): ModelErrorCode {
     case "NetworkError":
       return "download_failed";
     case "NotReadableError":
-      return "model_unavailable";
+      return "output_filtered";
     case "QuotaExceededError":
       return "context_too_large";
     case "AbortError":

@@ -112,9 +112,10 @@ export function createFakeModelAdapter(scenario: FakeModelScenario = {}): {
   };
   const lifecycle = { created: 0, destroyed: 0 };
   const createdPrompts: ModelPrompt[][] = [];
+  let currentAvailability = resolved.availability;
 
   const adapter: LocalModelAdapter = {
-    availability: async () => resolved.availability,
+    availability: async () => currentAvailability,
     create: async (initialPrompts, signal, onProgress) => {
       if (signal?.aborted) throw abortError();
       if (resolved.createError) throw scenarioError(resolved.createError);
@@ -122,7 +123,7 @@ export function createFakeModelAdapter(scenario: FakeModelScenario = {}): {
       for (const fraction of resolved.progress ?? []) {
         const progress: ModelProgress =
           fraction >= 1
-            ? { state: "finalizing" }
+            ? { state: "preparing" }
             : { state: "downloading", fraction };
         onProgress?.(progress);
       }
@@ -130,6 +131,12 @@ export function createFakeModelAdapter(scenario: FakeModelScenario = {}): {
       await wait(resolved.createDelayMs, signal);
 
       lifecycle.created += 1;
+      if (
+        currentAvailability.state === "downloadable" ||
+        currentAvailability.state === "downloading"
+      ) {
+        currentAvailability = { state: "available" };
+      }
       createdPrompts.push(initialPrompts);
       return new FakeSession(resolved, () => {
         lifecycle.destroyed += 1;

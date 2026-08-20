@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StrictMode } from "react";
 import { describe, expect, it } from "vitest";
@@ -22,7 +22,7 @@ describe("assistant availability", () => {
     expect(screen.queryByText("Not saved")).not.toBeInTheDocument();
   });
 
-  it("renders checking, measured download, finalization, and setup failure states truthfully", () => {
+  it("renders checking, indeterminate and measured download, preparation, and setup failure states truthfully", () => {
     const actions = {
       onPrepare: () => undefined,
       onRetry: () => undefined,
@@ -35,6 +35,17 @@ describe("assistant availability", () => {
 
     rerender(
       <AvailabilityPanel
+        environment={{ status: "downloading", fraction: null }}
+        {...actions}
+      />,
+    );
+    expect(screen.getByRole("progressbar", { name: /model download progress/i })).not.toHaveAttribute(
+      "value",
+    );
+    expect(screen.queryByText(/0%/i)).not.toBeInTheDocument();
+
+    rerender(
+      <AvailabilityPanel
         environment={{ status: "downloading", fraction: 0.42 }}
         {...actions}
       />,
@@ -42,10 +53,10 @@ describe("assistant availability", () => {
     expect(screen.getByRole("progressbar", { name: /model download progress/i })).toHaveValue(
       0.42,
     );
-    expect(screen.getByText("42% reported")).toBeVisible();
+    expect(screen.getByText("42% downloaded")).toBeVisible();
 
-    rerender(<AvailabilityPanel environment={{ status: "finalizing" }} {...actions} />);
-    expect(screen.getByRole("heading", { name: /download complete/i })).toBeVisible();
+    rerender(<AvailabilityPanel environment={{ status: "preparing" }} {...actions} />);
+    expect(screen.getByRole("heading", { name: /getting the model ready/i })).toBeVisible();
 
     rerender(
       <AvailabilityPanel
@@ -74,7 +85,7 @@ describe("assistant availability", () => {
     expect(lifecycle.created).toBe(0);
   });
 
-  it("requires an explicit action before preparation and reaches ready after finalizing", async () => {
+  it("requires an explicit action before preparation and reaches ready after model initialization", async () => {
     const user = userEvent.setup();
     const { adapter, lifecycle } = createFakeModelAdapter({
       availability: { state: "downloadable" },
@@ -97,6 +108,102 @@ describe("assistant availability", () => {
     expect(composer).toBeEnabled();
     expect(screen.queryByRole("button", { name: "Context details" })).not.toBeInTheDocument();
     expect(lifecycle.created).toBe(1);
+
+    await user.type(composer, "Use the prepared session");
+    await user.click(screen.getByRole("button", { name: "Send message" }));
+    expect(await screen.findByText("A local response.")).toBeVisible();
+    expect(lifecycle.created).toBe(1);
+  });
+
+  it("does not present synthetic create progress as a download for an available model", async () => {
+    const user = userEvent.setup();
+    const { adapter } = createFakeModelAdapter({
+      availability: { state: "available" },
+      createDelayMs: 80,
+      progress: [0, 1],
+    });
+    render(
+      <AssistantWorkspace
+        adapter={adapter}
+        repository={new MemoryAssistantRepository()}
+      />,
+    );
+
+    await user.type(
+      await screen.findByLabelText("Message the local assistant"),
+      "Already downloaded",
+    );
+    await user.click(screen.getByRole("button", { name: "Send message" }));
+
+    expect(await screen.findByText("Preparing your message…")).toBeVisible();
+    expect(screen.queryByText(/downloading the on-device model/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/download complete/i)).not.toBeInTheDocument();
+    expect(await screen.findByText("A local response.")).toBeVisible();
+  });
+
+  it("notices a background download becoming available without manual Retry", async () => {
+    const fake = createFakeModelAdapter();
+    let availabilityChecks = 0;
+    const adapter = {
+      ...fake.adapter,
+      availability: async () => {
+        availabilityChecks += 1;
+        return availabilityChecks === 1
+          ? ({ state: "downloading" } as const)
+          : ({ state: "available" } as const);
+      },
+    };
+    render(
+      <AssistantWorkspace
+        adapter={adapter}
+        repository={new MemoryAssistantRepository()}
+      />,
+    );
+
+    expect(await screen.findByText(/Chrome is downloading the on-device model/i)).toBeVisible();
+    fireEvent(document, new Event("visibilitychange"));
+
+    expect(await screen.findByLabelText("Message the local assistant")).toBeEnabled();
+    expect(availabilityChecks).toBeGreaterThanOrEqual(2);
+  });
+
+  it("keeps watching when page setup ends before Chrome's background download", async () => {
+    const user = userEvent.setup();
+    const fake = createFakeModelAdapter({ createError: "operation_failed" });
+    let availabilityChecks = 0;
+    const adapter = {
+      ...fake.adapter,
+      availability: async () => {
+        availabilityChecks += 1;
+        if (availabilityChecks === 1) return { state: "downloadable" } as const;
+        if (availabilityChecks === 2) return { state: "downloading" } as const;
+        return { state: "available" } as const;
+      },
+    };
+    render(
+      <AssistantWorkspace
+        adapter={adapter}
+        repository={new MemoryAssistantRepository()}
+      />,
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: "Prepare on this device" }),
+    );
+    expect(await screen.findByText(/Chrome is downloading the on-device model/i)).toBeVisible();
+
+    await act(
+      async () =>
+        new Promise<void>((resolve) => {
+          window.setTimeout(resolve, 0);
+        }),
+    );
+    expect(document.visibilityState).toBe("visible");
+    fireEvent(document, new Event("visibilitychange"));
+    expect(availabilityChecks).toBeGreaterThanOrEqual(3);
+
+    expect(await screen.findByLabelText("Message the local assistant")).toBeEnabled();
+    expect(availabilityChecks).toBeGreaterThanOrEqual(3);
   });
 
   it("keeps context hidden in a blank ready chat and shows it after the first turn", async () => {

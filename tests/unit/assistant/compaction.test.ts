@@ -59,6 +59,8 @@ describe("compactConversation", () => {
       "Fact 0 remains important.",
     );
     expect(lifecycle.created).toBe(2);
+    expect(result.ok ? result.session : null).not.toBeNull();
+    if (result.ok) result.session.destroy();
     expect(lifecycle.destroyed).toBe(2);
   });
 
@@ -99,6 +101,27 @@ describe("compactConversation", () => {
     ).resolves.toEqual({ ok: false, code: "context_too_large" });
     expect((await repository.getConversation(conversation.session.id))?.context).toBeNull();
     expect(lifecycle).toEqual({ created: 1, destroyed: 1 });
+  });
+
+  it("preserves Chrome's filtered-output recovery code during compaction", async () => {
+    const repository = new MemoryAssistantRepository();
+    await repository.initialize();
+    const conversation = await completedConversation(repository);
+    const { adapter, lifecycle } = createFakeModelAdapter({
+      chunks: ["Uncommitted candidate"],
+      streamError: "output_filtered",
+    });
+
+    await expect(
+      compactConversation({
+        adapter,
+        conversation,
+        personality: (await repository.getSettings()).personality,
+        repository,
+      }),
+    ).resolves.toEqual({ ok: false, code: "output_filtered" });
+    expect((await repository.getConversation(conversation.session.id))?.context).toBeNull();
+    expect(lifecycle.destroyed).toBe(lifecycle.created);
   });
 
   it("rolls back a candidate when history or personality changes before commit", async () => {

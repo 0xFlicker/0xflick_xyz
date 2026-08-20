@@ -14,10 +14,10 @@ function environmentText(state: AssistantState["environment"]): string {
       return "Model preparation required";
     case "downloading":
       return state.fraction === null
-        ? "Downloading model"
-        : `Downloading model ${Math.round(state.fraction * 100)}%`;
-    case "finalizing":
-      return "Download complete; preparing model";
+        ? "Chrome is downloading the model"
+        : `Downloading model ${Math.floor(state.fraction * 100)}%`;
+    case "preparing":
+      return "Getting the model ready";
     case "ready":
       return "On-device AI ready";
     case "failed":

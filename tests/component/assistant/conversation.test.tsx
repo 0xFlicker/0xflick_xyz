@@ -11,7 +11,7 @@ describe("Assistant conversation", () => {
   it("sends multi-line turns, keeps visible lifecycle feedback, and starts a new chat", async () => {
     const user = userEvent.setup();
     const repository = new MemoryAssistantRepository();
-    const { adapter } = createFakeModelAdapter({
+    const { adapter, lifecycle } = createFakeModelAdapter({
       chunks: ["A", "A local answer."],
     });
     render(<AssistantWorkspace adapter={adapter} repository={repository} />);
@@ -26,11 +26,17 @@ describe("Assistant conversation", () => {
       screen.getByText((_, element) => element?.textContent === "First line\nSecond line"),
     ).toBeInTheDocument();
 
+    await user.type(screen.getByLabelText("Message the local assistant"), "Follow up");
+    await user.click(screen.getByRole("button", { name: "Send message" }));
+    expect((await screen.findAllByText("A local answer.")).length).toBe(2);
+    expect(lifecycle).toEqual({ created: 1, destroyed: 0 });
+
     await user.click(screen.getAllByRole("button", { name: "New chat" })[0]);
     expect(screen.getByLabelText("Message the local assistant")).toHaveValue("");
     expect(
       screen.getByRole("button", { name: "First line Second line" }),
     ).toBeVisible();
+    expect(lifecycle).toEqual({ created: 1, destroyed: 1 });
   });
 
   it("stops generation while preserving and copying partial output", async () => {
@@ -74,6 +80,25 @@ describe("Assistant conversation", () => {
     await user.click(screen.getByRole("button", { name: "Send message" }));
 
     expect(await screen.findByRole("button", { name: "Retry response" })).toBeVisible();
+  });
+
+  it("explains when Chrome filters the model output", async () => {
+    const user = userEvent.setup();
+    const { adapter } = createFakeModelAdapter({ streamError: "output_filtered" });
+    render(
+      <AssistantWorkspace
+        adapter={adapter}
+        repository={new MemoryAssistantRepository()}
+      />,
+    );
+
+    await user.type(
+      await screen.findByLabelText("Message the local assistant"),
+      "A prompt Chrome filters",
+    );
+    await user.click(screen.getByRole("button", { name: "Send message" }));
+
+    expect(await screen.findByText(/built-in safety checks blocked the output/i)).toBeVisible();
   });
 });
 

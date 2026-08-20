@@ -17,6 +17,7 @@
 - Q: What should visitors see at the assistant URL when their browser or device cannot run the local model? → A: Show the same takeover shell with the limitation, requirements, Retry, and a route back to the portfolio instead of chat controls.
 - Q: Should the shipped assistant record anonymous, non-content events such as opening the experience, model eligibility, preparation completion, first-turn completion, and failure category? → A: Collect no assistant-specific analytics; rely only on evaluator studies.
 - Q: Which types of supported desktop must pass the ready-model response-time and answer-quality checks before the feature can ship? → A: Test only the project owner's current supported Mac.
+- Q: Should the ready assistant retain Chrome's native session between turns? → A: Retain one native session for the selected chat when its persisted history, compacted context, and personality are unchanged; destroy and reconstruct it whenever those inputs become stale.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -35,12 +36,13 @@ An eligible portfolio visitor opens the dedicated assistant experience, understa
 3. **Given** a completed first exchange, **When** the visitor asks a follow-up that depends on that exchange, **Then** the assistant responds using the active conversation context.
 4. **Given** a response is being generated, **When** the visitor chooses Stop, **Then** generation stops, any received text remains visible as an interrupted response, and the visitor can send another prompt.
 5. **Given** a conversation contains messages, **When** the visitor starts a new chat, **Then** a separate empty conversation opens and the prior conversation remains available in local history.
+6. **Given** a ready selected chat completes one turn without interruption, **When** the visitor submits a follow-up before its persisted context changes elsewhere, **Then** the assistant reuses that chat's ready local model session without presenting model-download activity again.
 
 ---
 
 ### User Story 2 - Understand Preparation, Availability, and Failure (Priority: P2)
 
-A visitor encounters any supported lifecycle state—checking, preparation required, downloading, finalizing, ready, generating, interrupted, or failed—and always understands what is happening, whether waiting is useful, and what action is available. An ineligible visitor receives an honest explanation instead of a broken or misleading chat surface.
+A visitor encounters any supported lifecycle state—checking, preparation required, downloading, preparing, ready, generating, interrupted, or failed—and always understands what is happening, whether waiting is useful, and what action is available. An ineligible visitor receives an honest explanation instead of a broken or misleading chat surface.
 
 **Why this priority**: Local inference can require a large first-time preparation and can change availability independently of the site. Trustworthy lifecycle feedback is essential to the demonstration.
 
@@ -135,10 +137,10 @@ A visitor can add optional global instructions that shape subsequent answers, se
 - **FR-001**: The product MUST provide a stable, directly shareable URL for the assistant and a discoverable entry point from the portfolio.
 - **FR-002**: The product MUST present the assistant as a dedicated takeover experience while retaining a clear way back to the portfolio.
 - **FR-003**: The product MUST determine whether the current environment can provide the required browser-local model before enabling conversation input.
-- **FR-004**: The product MUST distinguish checking, preparation available, preparation in progress, finalizing, ready, generating, stopped, context-limited, and failed states whenever those distinctions are reliably available.
+- **FR-004**: The product MUST distinguish checking, preparation available, actual download in progress, model initialization, ready, generating, stopped, context-limited, and failed states whenever those distinctions are reliably available; ordinary ready-model initialization MUST NOT be labelled as a download.
 - **FR-005**: The product MUST show a meaningful state change or acknowledgment within one second of activation, submission, stopping, retrying, deletion, clearing, saving settings, or starting compaction.
 - **FR-006**: The product MUST require an explicit visitor action before beginning a first-time model preparation and MUST explain that preparation can require substantial local storage, memory, processing, time, and an unmetered connection.
-- **FR-007**: The product MUST report measured preparation progress when available and MUST use an indeterminate finalization state when measured download is complete but the model is not ready.
+- **FR-007**: The product MUST report measured download progress only when pre-creation availability indicates a download, MUST use indeterminate progress before Chrome reports a positive fraction, and MUST use an indeterminate preparation state when measured download is complete but the model is not ready.
 - **FR-008**: When local inference is unsupported or unavailable, the product MUST retain the same takeover shell, replace chat controls with the reliably detected limitation, relevant requirements, Retry, and a route back to the portfolio, and MUST NOT present a simulated chat, cloud inference, or another local runtime as a fallback.
 - **FR-009**: The product MUST keep an always-visible notice stating that inference runs locally, the assistant has no tools or live web access, answers may be wrong or outdated, and important results should be double-checked.
 - **FR-010**: The shipped assistant MUST NOT emit assistant-specific analytics or diagnostics for eligibility, preparation, turns, context, or failures; prompts, responses, personality text, context summaries, and session titles MUST remain on the visitor's device and MUST NOT be included in site-wide analytics, logs, URLs, or requests to the site or third parties.
@@ -154,6 +156,7 @@ A visitor can add optional global instructions that shape subsequent answers, se
 - **FR-017**: The visitor MUST be able to copy the text of an individual assistant response.
 - **FR-018**: The assistant's fixed guidance MUST favor direct helpful answers, acknowledge material uncertainty, ask a concise clarifying question when the request cannot be answered responsibly, and never claim access to tools, live information, private data, or actions it does not have.
 - **FR-019**: A personality preference MUST NOT override the fixed guidance, local-data disclosure, or double-check-results notice.
+- **FR-048**: The product MUST retain at most one native model session per window for the selected chat, reuse it across successful turns only while persisted history, compacted context, and personality still match, and destroy it on interruption, failure, invalidation, destructive action, session switch, or unmount.
 
 #### Sessions and Local Data Control
 

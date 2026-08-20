@@ -29,7 +29,7 @@ Delivery grows in four independently usable layers:
 
 **Project Type**: Client-heavy feature inside the existing single Next.js web application; no API route, backend inference, or server-side transcript storage
 
-**Performance Goals**: On the qualifying owner-Mac validation run, at least 90% of 20 normal prompts show first generated content within 15 seconds and no interaction leaves more than 5 seconds of ambiguous activity; model download and preparation always expose distinct feedback
+**Performance Goals**: On the qualifying owner-Mac validation run, at least 90% of 20 normal prompts show first generated content within 15 seconds and no interaction leaves more than 5 seconds of ambiguous activity; model download and preparation always expose distinct feedback; one valid native session is retained for the selected chat so unchanged follow-up turns avoid repeated session creation
 
 **Constraints**: Prompt and response content never leaves the browser through the feature; one active generation per session; queued prompts converge across windows; maximum 100 saved sessions with the 101st blocked until the visitor deletes one; personality text limited to 1,000 Unicode code points; context warning at 75% and pre-turn compaction target at 80%; no analytics for assistant content or behavior; no cloud or alternate model fallback
 
@@ -141,7 +141,7 @@ vitest.config.ts
 ## Implementation Boundaries
 
 - `AssistantWorkspace` coordinates orthogonal availability, generation/context, and storage state; components do not call browser AI or IndexedDB directly.
-- `modelAdapter` is the only production interface to `LanguageModel`. The browser implementation owns creation, streaming, cancellation, measurements, and destruction; deterministic tests inject a fake.
+- `modelAdapter` is the only production interface to `LanguageModel`. The browser implementation owns creation, streaming, cancellation, measurements, and destruction; the workspace may retain one valid native session for the selected chat while persisted prompt inputs match; deterministic tests inject a fake.
 - `repository` is the only persistence interface consumed by orchestration and UI. Dexie and memory repositories publish the same query snapshots and mutation results.
 - `contextManager` selects transcript material and decides when to compact. `compaction` produces a candidate summary but cannot commit it; the orchestrator commits only after a replacement model session succeeds.
 - Dexie records are the cross-window source of truth. Web Locks serialize model work but never replace database transactions or deletion guards.

@@ -105,10 +105,13 @@ Use a dedicated non-sensitive test profile. Do not enter private or production s
 
 1. Open `/assistant` and confirm state text appears within one second.
 2. If preparation is offered, read the disclosure and activate it.
-3. Confirm progress is determinate when reported, then changes to an indeterminate finalization state until ready.
+3. Confirm zero progress is indeterminate, positive progress is determinate when reported, then changes to an indeterminate preparation state until ready.
 4. Submit a multi-line prompt. Confirm queued/checking/generating feedback persists until first text.
 5. Stop a long response. Confirm partial text remains visibly Stopped.
 6. Send a follow-up and confirm it uses the completed prior exchange.
+7. Confirm the ready follow-up does not show model-download UI and reuses the active native session until the chat, personality, or compacted context changes.
+
+For a repeatable first-download test, launch Chrome with a fresh temporary `--user-data-dir` as recommended by Chrome's built-in AI documentation. Do not force-unload the model through `chrome://on-device-internals`; that page is useful for observation but can leave the browser's model service in a non-user lifecycle state.
 
 ### History and destructive actions
 

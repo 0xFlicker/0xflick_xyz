@@ -83,20 +83,20 @@ description: "Dependency-ordered implementation tasks for the on-device AI assis
 
 **Goal**: Every detectable Prompt API lifecycle and failure state names what is happening and offers an accurate next action without hosted or alternate-runtime fallback.
 
-**Independent Test**: Script checking, downloadable, downloading, finalizing, ready, stopped, unavailable, purged-model, setup error, generation error, and empty-response states; verify state-specific copy/actions, prompt preservation, explicit activation, and the unchanged takeover shell.
+**Independent Test**: Script checking, downloadable, downloading, preparing, ready, stopped, unavailable, purged-model, setup error, generation error, and empty-response states; verify state-specific copy/actions, prompt preservation, explicit activation, and the unchanged takeover shell.
 
 ### Tests for User Story 2
 
-- [X] T025 [P] [US2] Add failing adapter tests for secure/global detection, exact English options, all availability values, activation-bound creation, progress/finalization, rechecks, normalized DOMException errors, empty output, and destroy cleanup in tests/unit/assistant/browserLanguageModel.test.ts
-- [X] T026 [P] [US2] Add failing checking/consent/download/finalizing/unavailable/failure/retry/Stop-waiting component tests with one-second acknowledgments in tests/component/assistant/availability.test.tsx
+- [X] T025 [P] [US2] Add failing adapter tests for secure/global detection, exact English options, all availability values, activation-bound creation, progress/preparation, rechecks, normalized DOMException errors, empty output, and destroy cleanup in tests/unit/assistant/browserLanguageModel.test.ts
+- [X] T026 [P] [US2] Add failing checking/consent/download/preparation/unavailable/failure/retry/Stop-waiting component tests with one-second acknowledgments in tests/component/assistant/availability.test.tsx
 - [X] T027 [P] [US2] Add failing fake lifecycle journeys proving unsupported takeover parity, no synthetic/cloud response, progress semantics, recovery, and preserved saved-session messaging in tests/e2e/assistant-lifecycle.spec.ts
 
 ### Implementation for User Story 2
 
 - [X] T028 [P] [US2] Map supported DOMException names and unknown API changes to stable actionable product errors without persisting raw input-bearing exceptions in src/features/assistant/model/errorMapping.ts
-- [X] T029 [US2] Extend authoritative secure-context/global availability, exact option reuse, activation-synchronous preparation, normalized download progress, finalization, late-create cleanup, and per-reconstruction rechecks in src/features/assistant/model/browserLanguageModel.ts
-- [X] T030 [US2] Add exhaustive checking/downloadable/downloading/finalizing/ready/failed and setup-abort transitions with prompt-preserving recovery in src/features/assistant/reducer.ts
-- [X] T031 [US2] Implement requirements, explicit consent, measured progress, finalization, unsupported details, Retry, Stop waiting, and portfolio return states in src/features/assistant/components/AvailabilityPanel.tsx
+- [X] T029 [US2] Extend authoritative secure-context/global availability, exact option reuse, activation-synchronous preparation, normalized download progress, preparation, late-create cleanup, and per-reconstruction rechecks in src/features/assistant/model/browserLanguageModel.ts
+- [X] T030 [US2] Add exhaustive checking/downloadable/downloading/preparing/ready/failed and setup-abort transitions with prompt-preserving recovery in src/features/assistant/reducer.ts
+- [X] T031 [US2] Implement requirements, explicit consent, measured progress, preparation, unsupported details, Retry, Stop waiting, and portfolio return states in src/features/assistant/components/AvailabilityPanel.tsx
 - [X] T032 [US2] Integrate detection, preparation from direct activation, stale-model re-preparation, generation/empty-response failures, and truthful recovery actions in src/features/assistant/AssistantWorkspace.tsx
 - [X] T033 [US2] Keep availability, work, and storage feedback simultaneously understandable without announcing token chunks in src/features/assistant/components/ActivityStatus.tsx
 - [X] T034 [US2] Replace conversation controls with `AvailabilityPanel` inside the same responsive frame whenever inference is unavailable while retaining disclosure and saved-history context in src/features/assistant/components/AssistantShell.tsx
@@ -352,3 +352,18 @@ Each checkpoint keeps one current production path. Later stories extend the same
 - Use the global Chrome `LanguageModel` API only; do not add `window.ai`, a cloud SDK, backend inference, model polyfill, alternate local runtime, or production fake.
 - Keep prompts, responses, titles, personality, summaries, and assistant failures out of URLs, site requests, third-party resource loads, logs, and analytics.
 - Commit after each verified task or cohesive group, and preserve unrelated work.
+
+---
+
+## Phase 9: Real-Model Lifecycle Correction and Active-Session Retention
+
+**Purpose**: Incorporate owner testing that exposed synthetic Prompt API progress, background download completion, and repeated native-session creation without weakening persisted cross-window truth.
+
+- [X] T077 [P] Add failing normalized-progress, available-model synthetic-progress suppression, automatic availability recovery, retained follow-up session, and invalidation coverage in tests/unit/assistant/browserLanguageModel.test.ts, tests/unit/assistant/modelSessionCache.test.ts, tests/component/assistant/availability.test.tsx, tests/component/assistant/conversation.test.tsx, and tests/e2e/assistant-lifecycle.spec.ts
+- [X] T078 Correct normalized Prompt API progress and current DOMException mapping in src/features/assistant/model/browserLanguageModel.ts, src/features/assistant/model/errorMapping.ts, and src/features/assistant/types.ts
+- [X] T079 Implement distinct download/preparing presentation, indeterminate zero progress, background availability polling, failure reconciliation, and non-contradictory activity in src/features/assistant/reducer.ts, src/features/assistant/components/AvailabilityPanel.tsx, src/features/assistant/components/ActivityStatus.tsx, and src/features/assistant/AssistantWorkspace.tsx
+- [X] T080 Implement one revision-keyed retained native session for the selected chat, transfer validated compaction replacement ownership, and destroy on every invalidation boundary in src/features/assistant/model/modelSessionCache.ts, src/features/assistant/context/compaction.ts, and src/features/assistant/AssistantWorkspace.tsx
+- [X] T081 Reconcile the specification, research, plan, data model, workspace/model contracts, quickstart, and task list with the corrected Chrome lifecycle and owner-approved retention scope
+- [X] T082 Run focused lifecycle/session tests plus every repository gate and record exact outcomes in specs/001-on-device-ai-assistant/validation.md
+
+**Checkpoint**: An already-downloaded model never presents download UI during ordinary turns; an actual long download remains understandable and becomes ready without manual Retry; unchanged follow-ups reuse one native session; stale, interrupted, failed, switched, compacted, deleted, or cleared sessions are destroyed before reconstruction.

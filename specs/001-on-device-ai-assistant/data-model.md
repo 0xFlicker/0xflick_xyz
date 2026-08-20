@@ -11,7 +11,7 @@
 - A turn is the unit that permanently relates one user prompt to its one assistant response. Transcript order is turn order `(promptCreatedAt, turnId)`, then user before assistant within the turn.
 - Submitted user content is durable before generation starts. Streaming assistant content is checkpointed and its final status is committed atomically with the turn.
 - Terminal turns are immutable. Retry creates a new turn; it does not overwrite prior prompt or response content.
-- A model session is a disposable runtime resource, not persisted data. It is reconstructed from the records below.
+- A model session is an ephemeral runtime resource, never persisted data. One session may be retained for the selected chat while its persisted prompt inputs still match; otherwise it is destroyed and reconstructed from the records below.
 
 ## Stored Entities
 
@@ -135,11 +135,13 @@ A mutation may write session content only when its captured epoch equals `AppMet
 These values are never persisted as product data:
 
 - The blank draft session and unsent composer text.
-- Live `LanguageModel` instances, abort controllers, streams, and progress monitors.
+- At most one idle retained `LanguageModel` instance for the selected chat, its non-content revision identity, active abort controllers, streams, and progress monitors.
 - Per-window identifier and the current Web Lock ownership.
 - Model availability/preparation state and measured download progress.
 - Clipboard success, dialog focus targets, scroll-follow state, and expanded panels.
 - Temporary repository selection for the current visit. Reload always attempts durable storage again.
+
+The retained runtime identity contains only the selected session ID, history revision, fixed prompt version, personality revision, and compacted-context range/timestamp fields. It contains no prompt, response, personality, or summary text. A successful turn advances the retained identity to the committed history revision. Any mismatch, interrupted or failed turn, session switch, destructive action, or runtime failure destroys the native session before later reconstruction.
 
 ## Relationships and Indexes
 

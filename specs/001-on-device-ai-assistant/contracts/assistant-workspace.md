@@ -50,12 +50,12 @@ Environment state is independent from storage and current work state.
 | `checking` | Honest detection message and indeterminate progress; composer unavailable | None |
 | `unsupported` | Reliably detected limitation, supported-environment requirements, preserved local-history statement, and no chat controls | Retry detection |
 | `downloadable` | Consent card explaining substantial download/storage/memory/processing/time and unmetered-connection requirements | Prepare on this device |
-| `downloading` | Normalized measured progress when emitted; never show bytes or an estimated completion time | Stop waiting |
-| `finalizing` | “Download complete; preparing model” with indeterminate progress | Stop waiting |
+| `downloading` | Indeterminate activity at zero, then normalized measured progress when emitted; never show bytes or an estimated completion time | Stop waiting |
+| `preparing` | “Getting the model ready” with indeterminate progress after an actual download reaches one | Stop waiting |
 | `ready` | Composer and session actions enabled subject to their own state | Send |
 | `failed` | Plain-language mapped failure and applicable recovery | Retry, edit prompt, or browser help |
 
-`Prepare on this device` calls model creation synchronously within that visitor activation. `Stop waiting` stops this page's wait and must not claim that Chrome's shared model download was cancelled. Retry always re-runs authoritative availability; it does not assume that an earlier result remains true.
+`Prepare on this device` calls model creation synchronously within that visitor activation. Monitor events are presented as download progress only when the availability captured before creation was `downloadable` or `downloading`; an already-available model may emit synthetic initialization progress and must keep the conversation interface visible with `Preparing your message…`. `Stop waiting` stops this page's wait and must not claim that Chrome's shared model download was cancelled. While Chrome reports a background download and no creation promise remains active, the workspace polls availability and rechecks when the page returns to the foreground so readiness appears without a manual Retry. Retry always re-runs authoritative availability; it does not assume that an earlier result remains true.
 
 ## Conversation Contract
 
@@ -81,7 +81,7 @@ Environment state is independent from storage and current work state.
 ### Transcript behavior
 
 - Turn order is `(promptCreatedAt, turnId)` and user precedes assistant within each turn. Cross-window snapshots never duplicate a stable ID.
-- The live model is reconstructed only from fixed guidance, the current personality, a valid optional summary, and eligible completed turns. Failed or interrupted assistant output remains visible but is not represented as a completed answer.
+- The selected chat may retain one live model session across successful turns. Reuse is allowed only while its persisted history revision, compacted-context identity, fixed prompt version, and personality revision still match. Otherwise it is reconstructed only from fixed guidance, the current personality, a valid optional summary, and eligible completed turns. Failed or interrupted assistant output remains visible but is not represented as a completed answer.
 - Auto-follow continues only while the visitor is near the transcript end. Scrolling upward pauses it and exposes a keyboard-operable Jump to latest action; incoming chunks never steal the viewport.
 - Switching session aborts this window's active runtime object but does not discard persisted content. The newly active session is reconstructed before its next turn.
 
@@ -97,7 +97,7 @@ Environment state is independent from storage and current work state.
 
 | Action | Contract |
 |--------|----------|
-| Switch session | Persist current coherent state, destroy this window's live model, set the selected stable ID, and render the repository snapshot |
+| Switch session | Persist current coherent state, destroy this window's retained or active model, set the selected stable ID, and render the repository snapshot |
 | Delete session | Require a dialog naming the session; on commit remove only that session's turns/messages/context, retain personality, select the next recent session or blank draft, and restore focus to a predictable session action |
 | Clear all | Require destructive confirmation describing sessions and personality; on verified commit show a blank draft and blank personality; on failure explicitly state that persistent deletion was not verified |
 | Save personality | Show Unicode code-point count; accept blank through 1,000; block over-limit save without replacing the prior value; announce success within one second |

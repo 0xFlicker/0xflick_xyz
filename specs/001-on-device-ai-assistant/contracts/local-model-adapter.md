@@ -30,7 +30,7 @@ type ModelAvailability =
 
 type ModelProgress =
   | { state: "downloading"; fraction: number }
-  | { state: "finalizing" }
+  | { state: "preparing" }
 
 type ModelContext = {
   usage: number | null
@@ -80,14 +80,22 @@ Generated response text, prior user content, personality text, and compacted sum
 1. If the page is not a secure context or the global is absent, return `unavailable` without throwing.
 2. Call availability with the exact options later used by create.
 3. Normalize only the specified availability values. An unknown browser value fails as `api_changed` rather than silently mapping to ready.
-4. Re-run detection before every new create or reconstruction because Chrome may update, purge, or make the shared model temporarily ineligible.
+4. Re-run detection before every new create or reconstruction because Chrome may update, purge, or make the shared model temporarily ineligible. A revision-valid retained session does not require another create.
 
 ### Prepare and create
 
 - When availability can require model download, `create()` begins synchronously inside the visitor's activation handler before unrelated awaited work.
-- Normalize progress to a clamped fraction from 0 through 1. A reported 1 changes UI to finalizing; readiness begins only when create resolves.
+- Treat `ProgressEvent.loaded` as the normalized fraction and clamp it from 0 through 1. Do not infer download from the monitor alone: the caller exposes the monitor only when its pre-creation availability was `downloadable` or `downloading`. Zero is indeterminate; a reported one changes download UI to preparing; readiness begins only when create resolves.
 - Aborting the setup signal stops waiting and destroys a late-created session. Copy does not promise that Chrome's shared download was cancelled.
 - A create result is owned by exactly one active feature session in one window. It is destroyed on conversation switch, deletion, Clear all, replacement, failure, or unmount.
+
+### Retain and invalidate
+
+- At most one native session is retained while idle in a window, and only for the selected chat (or its not-yet-saved blank draft after explicit preparation).
+- A retained session is reusable when session/history revision, fixed prompt version, personality revision, and compacted-context identity match the latest repository snapshot under the generation lock.
+- A successful prompt transfers the same native session back to the retained slot with its newly committed revision identity.
+- Stop, stream/create/measurement failure, model unavailability, revision mismatch, session switch, personality save, compaction replacement, deletion, Clear all, and unmount destroy the retained or active session. Destruction remains idempotent.
+- Cross-window state is never copied from the native object. A later lock owner re-reads IndexedDB and reconstructs when another window advanced the persisted revision.
 
 ### Reconstruct
 
@@ -132,7 +140,8 @@ Native failures are normalized without persisting raw exception text when it cou
 | `activation_required` | `NotAllowedError` during first-time create | Activate Prepare again |
 | `unsupported_input` | `NotSupportedError` | Use supported English text or compatible environment |
 | `download_failed` | `NetworkError` during preparation | Check unmetered connection and retry |
-| `model_unavailable` | `NotReadableError`, changed availability | Retry detection/preparation |
+| `output_filtered` | `NotReadableError` while prompting | Edit the prompt or retry |
+| `model_unavailable` | changed availability or failed eligibility recheck | Retry detection/preparation |
 | `context_too_large` | `QuotaExceededError` or failed measurement | Smaller prompt, Compact now, or New chat |
 | `aborted` | `AbortError` | Preserve partial output; retry if wanted |
 | `operation_failed` | `OperationError` | Retry; recreate session first |

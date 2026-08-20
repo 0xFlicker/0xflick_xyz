@@ -10,13 +10,15 @@
 |---|---|---|
 | `yarn lint` | Pass | Next ESLint completed with no warnings or errors. |
 | `yarn typecheck` | Pass | `tsc --noEmit` completed successfully. |
-| `yarn validate:content` | Pass | Validated identity, chronology, privacy markers, and 9 routes across 84 source files and 102 public text files. |
+| `yarn validate:content` | Pass | Validated identity, chronology, privacy markers, and 9 routes across 85 source files and 103 public text files. |
 | `yarn test:content` | Pass | 5 of 5 content-validator tests passed. |
-| `yarn test:assistant` | Pass | 15 files and 71 unit/component tests passed. Node emitted only the non-functional experimental `localStorage` warning from isolated Vitest workers. |
-| `yarn build` | Pass | Next.js production build compiled, typechecked, linted, and generated all 16 static pages. `/assistant` is 99 kB with 203 kB first-load JavaScript. Browserslist reported the existing stale `caniuse-lite` advisory. |
-| `yarn test:e2e:assistant` | Pass | A fresh production build completed, then 32 of 32 Playwright journeys passed across desktop Chromium and a 390 px narrow Chromium project. |
+| `yarn test:assistant` | Pass | 16 files and 81 unit/component tests passed. Node emitted only the non-functional experimental `localStorage` warning from isolated Vitest workers. |
+| `yarn build` | Pass | Next.js production build compiled, typechecked, linted, and generated all 16 static pages. `/assistant` is 100 kB with 204 kB first-load JavaScript. Browserslist reported the existing stale `caniuse-lite` advisory. |
+| `yarn test:e2e:assistant` | Pass | A fresh production build completed, then 34 of 34 Playwright journeys passed across desktop Chromium and a 390 px narrow Chromium project. |
 
 The browser suite covers ready, unsupported, and downloadable model states; simple streaming turns and Stop; context display, manual/automatic compaction, unknown capacity, and overflow; browser persistence, the 100-session limit, deletion, Clear all, and temporary storage; personality settings; two-page Web Lock ordering and recovery; no-egress observation; and wide/narrow accessibility behavior.
+
+The real-model lifecycle correction adds direct regression proof for Chrome's normalized `downloadprogress` values, indeterminate zero progress, download-to-preparation presentation, page-setup failure while Chrome continues downloading, automatic availability polling, available-model synthetic-progress suppression, current `NotReadableError` output-filtering semantics, and active native-session reuse. Two unchanged turns use one native session; preparation hands its session to the first turn; successful compaction hands over its validated replacement; and history, personality, selection, Stop, failure, deletion, Clear all, unavailability, or unmount invalidates and destroys stale retained state. The production Chromium lifecycle journey emits synthetic `0` and `1` progress during an already-available model create and verifies that no download UI appears.
 
 A follow-up context-visibility refinement was validated with the full unit suite plus the ready-model and unknown-capacity Playwright journeys in both desktop and narrow Chromium. Those journeys prove that a blank chat omits the context control and that it appears after the first turn. The existing `yarn dev` process on port 3000 was left running, so the production build/full-matrix command was not repeated over that process; the table's production build and 32-test result remain the immediately preceding release run.
 
@@ -38,7 +40,7 @@ The final audit covered `src/features/assistant/`, `src/app/assistant/`, assista
 
 ### T073 — real Chrome and assistive-technology exercise
 
-Not run. Playwright uses bundled Chromium, a deterministic fake `LanguageModel`, root-font scaling rather than browser UI zoom, and automated axe inspection. It does not prove the owner Chrome Prompt API, actual model download UI, a screen reader, true 200% browser zoom, or a manual DevTools network inspection. A person must still perform the representative desktop/narrow, keyboard, screen-reader, zoom, reduced-motion, navigation, overflow, dialog, storage, and no-egress pass in supported Chrome.
+Not run. Playwright uses bundled Chromium, a deterministic fake `LanguageModel`, root-font scaling rather than browser UI zoom, and automated axe inspection. It does not prove the owner Chrome Prompt API, a cold download in a fresh user-data profile, a screen reader, true 200% browser zoom, or a manual DevTools network inspection. A person must still perform the representative desktop/narrow, keyboard, screen-reader, zoom, reduced-motion, navigation, cold-download, overflow, dialog, storage, and no-egress pass in supported Chrome.
 
 ### T074 — owner-Mac model quality and context retention
 

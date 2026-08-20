@@ -16,7 +16,7 @@ export type AssistantAction =
   | { type: "environment/checking" }
   | { type: "environment/availability"; availability: ModelAvailability }
   | { type: "environment/progress"; fraction: number | null }
-  | { type: "environment/finalizing" }
+  | { type: "environment/preparing" }
   | { type: "environment/ready" }
   | { type: "environment/failed"; code: ModelErrorCode }
   | { type: "storage/durable" }
@@ -56,10 +56,16 @@ export function assistantReducer(
     case "environment/progress":
       return {
         ...state,
-        environment: { status: "downloading", fraction: action.fraction },
+        environment: {
+          status: "downloading",
+          fraction:
+            action.fraction !== null && action.fraction > 0
+              ? action.fraction
+              : null,
+        },
       };
-    case "environment/finalizing":
-      return { ...state, environment: { status: "finalizing" } };
+    case "environment/preparing":
+      return { ...state, environment: { status: "preparing" } };
     case "environment/ready":
       return { ...state, environment: { status: "ready" } };
     case "environment/failed":

@@ -17,7 +17,7 @@ const SUMMARY_GUIDANCE =
   "Condense the supplied older conversation into concise plain-text context for another local assistant. Retain durable facts, decisions, user preferences, constraints, uncertainty, attribution, and open questions. Omit filler and superseded wording. Add no facts, decisions, instructions, or capabilities.";
 
 export type CompactionResult =
-  | { ok: true; context: ContextState }
+  | { ok: true; context: ContextState; session: LocalModelSession }
   | { ok: false; code: ModelErrorCode | RepositoryErrorCode };
 
 interface CompactConversationInput {
@@ -54,6 +54,7 @@ function compactionError(error: unknown): ModelErrorCode {
       case "unsupported_input":
       case "download_failed":
       case "model_unavailable":
+      case "output_filtered":
       case "context_too_large":
       case "aborted":
       case "operation_failed":
@@ -135,7 +136,10 @@ export async function compactConversation({
       expectedHistoryRevision: conversation.session.historyRevision,
       expectedPersonalityRevision: personality.revision,
     });
-    return committed.ok ? { ok: true, context } : committed;
+    if (!committed.ok) return committed;
+    const session = replacementSession;
+    replacementSession = null;
+    return { ok: true, context, session };
   } catch (error) {
     return { ok: false, code: compactionError(error) };
   } finally {
