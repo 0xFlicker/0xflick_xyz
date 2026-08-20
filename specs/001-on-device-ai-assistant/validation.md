@@ -12,8 +12,8 @@
 | `yarn typecheck` | Pass | `tsc --noEmit` completed successfully. |
 | `yarn validate:content` | Pass | Validated identity, chronology, privacy markers, and 9 routes across 84 source files and 102 public text files. |
 | `yarn test:content` | Pass | 5 of 5 content-validator tests passed. |
-| `yarn test:assistant` | Pass | 15 files and 70 unit/component tests passed. Node emitted only the non-functional experimental `localStorage` warning from isolated Vitest workers. |
-| `yarn build` | Pass | Next.js production build compiled, typechecked, linted, and generated all 16 static pages. `/assistant` is 98.9 kB with 202 kB first-load JavaScript. Browserslist reported the existing stale `caniuse-lite` advisory. |
+| `yarn test:assistant` | Pass | 15 files and 71 unit/component tests passed. Node emitted only the non-functional experimental `localStorage` warning from isolated Vitest workers. |
+| `yarn build` | Pass | Next.js production build compiled, typechecked, linted, and generated all 16 static pages. `/assistant` is 99 kB with 203 kB first-load JavaScript. Browserslist reported the existing stale `caniuse-lite` advisory. |
 | `yarn test:e2e:assistant` | Pass | A fresh production build completed, then 32 of 32 Playwright journeys passed across desktop Chromium and a 390 px narrow Chromium project. |
 
 The browser suite covers ready, unsupported, and downloadable model states; simple streaming turns and Stop; context display, manual/automatic compaction, unknown capacity, and overflow; browser persistence, the 100-session limit, deletion, Clear all, and temporary storage; personality settings; two-page Web Lock ordering and recovery; no-egress observation; and wide/narrow accessibility behavior.
@@ -27,6 +27,8 @@ The context dialog refinement was exercised in isolated desktop and narrow Chrom
 Automatic compaction was held open deterministically in both browser projects to verify the compact composer replacement. It shows `Making room for this conversation…`, `Your message will start automatically.`, and a working `Cancel`; the textarea and inaccurate `Stop response` action are absent until actual response generation begins. Manual compaction uses the same compact surface without presenting an ineffective cancel action.
 
 The accessibility journey exercises keyboard-only settings and composer use, deterministic dialog focus restoration, reduced-motion emulation, 200% root-text reflow, visible live generation state, transcript busy state, and an axe scan with zero violations in both viewport projects. Automated screenshot review at 1440 × 1000 and 390 × 844 confirmed that the desktop rail, narrow drawer, dialogs, transcript, context control, composer, and permanent disclosure remain legible and contained.
+
+The portfolio exit was moved from the storage footer to an icon-only back link at the top-left of both the desktop rail and narrow drawer. Its visible arrow retains the accessible name and tooltip `Return to portfolio`; focused desktop and narrow Chromium accessibility journeys passed.
 
 ## Source audit
 

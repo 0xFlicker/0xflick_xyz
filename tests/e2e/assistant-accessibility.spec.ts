@@ -25,6 +25,14 @@ test("supports keyboard, focus-managed dialogs, reduced motion, and reflow", asy
     Object.defineProperty(globalThis, "LanguageModel", { configurable: true, value: FakeLanguageModel });
   });
   await page.goto("/assistant");
+  if ((page.viewportSize()?.width ?? 0) < 768) {
+    await page.getByRole("button", { name: "Chats" }).click();
+  }
+  await expect(page.getByRole("link", { name: "Return to portfolio" })).toBeVisible();
+  await expect(page.getByText("Return to portfolio", { exact: true })).toHaveCount(0);
+  if ((page.viewportSize()?.width ?? 0) < 768) {
+    await page.keyboard.press("Escape");
+  }
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
   });

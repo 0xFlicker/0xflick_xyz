@@ -8,6 +8,20 @@ import { toSubmissionId } from "@/features/assistant/types";
 import { createFakeModelAdapter } from "../../fixtures/fakeLanguageModel";
 
 describe("session management", () => {
+  it("exposes the portfolio return as an icon-only top navigation link", async () => {
+    const repository = new MemoryAssistantRepository();
+    const { adapter } = createFakeModelAdapter();
+    render(<AssistantWorkspace adapter={adapter} repository={repository} />);
+
+    const portfolioLink = await screen.findByRole("link", {
+      name: "Return to portfolio",
+    });
+    expect(portfolioLink).toBeVisible();
+    expect(portfolioLink).toHaveAttribute("href", "/");
+    expect(portfolioLink).toHaveAttribute("title", "Return to portfolio");
+    expect(screen.queryByText("Return to portfolio")).not.toBeInTheDocument();
+  });
+
   it("disambiguates duplicate chat titles without changing their stored title", async () => {
     const repository = new MemoryAssistantRepository();
     await repository.initialize();

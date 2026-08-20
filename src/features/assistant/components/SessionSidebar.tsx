@@ -43,8 +43,29 @@ function SidebarContents({
   });
   return (
     <>
-      <div className="flex items-center justify-between px-2 py-2">
-        <div>
+      <div className="flex items-center gap-2 px-1 py-2">
+        <Link
+          aria-label="Return to portfolio"
+          className="group inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-600 outline-none hover:bg-zinc-100 hover:text-zinc-950 focus-visible:ring-2 focus-visible:ring-cyan-500 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
+          href="/"
+          title="Return to portfolio"
+        >
+          <svg
+            aria-hidden="true"
+            className="h-4 w-4 transition-transform group-hover:-translate-x-0.5 motion-reduce:transition-none"
+            fill="none"
+            viewBox="0 0 20 20"
+          >
+            <path
+              d="M15 10H5m0 0 4-4m-4 4 4 4"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.75"
+            />
+          </svg>
+        </Link>
+        <div className="min-w-0 flex-1">
           <p className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-cyan-700 dark:text-cyan-300">Flick</p>
           <p className="mt-1 font-semibold tracking-tight">Local Assistant</p>
         </div>
@@ -130,9 +151,6 @@ function SidebarContents({
             Clear all chats
           </button>
         ) : null}
-        <Link className="mt-3 inline-flex font-semibold text-zinc-800 underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 dark:text-zinc-200" href="/">
-          Return to portfolio
-        </Link>
       </div>
     </>
   );
