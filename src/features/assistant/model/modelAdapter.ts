@@ -1,4 +1,6 @@
 import type {
+  MediaCapability,
+  MediaKind,
   ModelAvailability,
   ModelContext,
   ModelInput,
@@ -16,9 +18,11 @@ export interface LocalModelSession {
 
 export interface LocalModelAdapter {
   availability(): Promise<ModelAvailability>;
+  capabilities?: () => Promise<MediaCapability>;
   create(
     initialPrompts: ModelPrompt[],
     signal?: AbortSignal,
     onProgress?: (progress: ModelProgress) => void,
+    mediaKinds?: MediaKind[],
   ): Promise<LocalModelSession>;
 }

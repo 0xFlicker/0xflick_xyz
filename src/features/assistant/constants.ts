@@ -1,5 +1,5 @@
 export const ASSISTANT_DATABASE_NAME = "flick-assistant";
-export const ASSISTANT_DATABASE_VERSION = 1;
+export const ASSISTANT_DATABASE_VERSION = 2;
 export const ASSISTANT_LOCK_PREFIX = "flick-assistant:session:";
 export const SESSION_LIMIT = 100;
 export const PERSONALITY_LIMIT = 1_000;

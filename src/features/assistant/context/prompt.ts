@@ -1,6 +1,7 @@
 import { PROMPT_VERSION } from "@/features/assistant/constants";
 import type {
   ConversationSnapshot,
+  MediaPart,
   ModelPrompt,
   PersonalitySetting,
 } from "@/features/assistant/types";
@@ -70,13 +71,26 @@ export function buildReconstructionPrompts({
     const assistant = messages.get(turn.assistantMessageId);
     if (!user || !assistant || assistant.status !== "completed") continue;
 
-    prompts.push({ role: "user", content: user.text });
+    const historyLabels = (user.mediaRepresentationIds ?? [])
+      .map((id) => conversation.mediaRepresentations?.find((item) => item.id === id))
+      .filter((representation) => representation !== undefined)
+      .map(
+        (representation) =>
+          `[Attached ${representation.kind}: ${representation.accessibleLabel}]`,
+      );
+    const replayText = [...historyLabels, user.text].filter(Boolean).join("\n");
+    prompts.push({ role: "user", content: replayText });
     prompts.push({ role: "assistant", content: assistant.text });
   }
 
   return prompts;
 }
 
-export function currentTurnPrompt(text: string): ModelPrompt[] {
-  return [{ role: "user", content: text }];
+export function currentTurnPrompt(text: string, media: MediaPart[] = []): ModelPrompt[] {
+  if (media.length === 0) return [{ role: "user", content: text }];
+  const content = [
+    ...(text.length > 0 ? [{ type: "text" as const, value: text }] : []),
+    ...media.map((part) => ({ type: part.kind, value: part.source })),
+  ];
+  return [{ role: "user", content }];
 }

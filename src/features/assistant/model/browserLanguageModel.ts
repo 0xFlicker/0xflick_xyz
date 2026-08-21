@@ -4,6 +4,9 @@ import type {
 } from "@/features/assistant/model/modelAdapter";
 import { normalizedModelError } from "@/features/assistant/model/errorMapping";
 import type {
+  MediaCapability,
+  MediaKind,
+  ModelContentPart,
   ModelAvailability,
   ModelContext,
   ModelInput,
@@ -16,6 +19,27 @@ export const LANGUAGE_MODEL_OPTIONS: LanguageModelCreateCoreOptions = {
   expectedOutputs: [{ type: "text", languages: ["en"] }],
 };
 
+function optionsFor(mediaKinds: MediaKind[] = []): LanguageModelCreateCoreOptions {
+  const types = ["text", ...mediaKinds.filter((kind, index) => mediaKinds.indexOf(kind) === index)];
+  return {
+    ...LANGUAGE_MODEL_OPTIONS,
+    expectedInputs: types.map((type) => ({
+      type: type as "text" | "image" | "audio",
+      languages: ["en"],
+    })),
+  };
+}
+
+type NativeContentPart = {
+  type: "text" | "image" | "audio";
+  value: LanguageModelMessageValue | Blob;
+};
+
+function nativeContent(content: string | ModelContentPart[]): string | NativeContentPart[] {
+  if (typeof content === "string") return content;
+  return content.map((part) => ({ type: part.type, value: part.value }));
+}
+
 function nativePrompts(
   prompts: ModelPrompt[],
 ): LanguageModelCreateOptions["initialPrompts"] {
@@ -24,14 +48,14 @@ function nativePrompts(
   if (first.role !== "system") {
     return prompts.map((prompt) => ({
       role: prompt.role === "system" ? "user" : prompt.role,
-      content: prompt.content,
+      content: nativeContent(prompt.content),
     }));
   }
   return [
-    { role: "system", content: first.content },
+    { role: "system", content: nativeContent(first.content) },
     ...rest.map((prompt) => ({
       role: prompt.role === "system" ? "user" : prompt.role,
-      content: prompt.content,
+      content: nativeContent(prompt.content),
     })),
   ];
 }
@@ -41,8 +65,8 @@ function nativeInput(input: ModelInput): LanguageModelPrompt {
   const messages: (LanguageModelMessage | LanguageModelAssistantMessage)[] = input.map(
     (prompt) =>
       prompt.role === "assistant"
-        ? { role: "assistant", content: prompt.content }
-        : { role: "user", content: prompt.content },
+        ? { role: "assistant", content: nativeContent(prompt.content) }
+        : { role: "user", content: nativeContent(prompt.content) },
   );
   return messages;
 }
@@ -141,10 +165,53 @@ export class BrowserLanguageModelAdapter implements LocalModelAdapter {
     }
   }
 
+  async capabilities(): Promise<MediaCapability> {
+    const observedAt = Date.now();
+    if (
+      typeof window === "undefined" ||
+      !window.isSecureContext ||
+      typeof LanguageModel === "undefined"
+    ) {
+      return {
+        text: false,
+        image: false,
+        audio: false,
+        observedAt,
+        modelIdentity: "chrome-prompt-api",
+        error: "media_unavailable",
+      };
+    }
+
+    const probe = async (mediaKinds: MediaKind[]): Promise<boolean> => {
+      try {
+        return (
+          normalizeAvailability(await LanguageModel.availability(optionsFor(mediaKinds))).state ===
+          "available"
+        );
+      } catch {
+        return false;
+      }
+    };
+    const [text, image, audio] = await Promise.all([
+      probe([]),
+      probe(["image"]),
+      probe(["audio"]),
+    ]);
+    return {
+      text,
+      image,
+      audio,
+      observedAt,
+      modelIdentity: "chrome-prompt-api",
+      error: text ? null : "media_unavailable",
+    };
+  }
+
   async create(
     initialPrompts: ModelPrompt[],
     signal?: AbortSignal,
     onProgress?: (progress: ModelProgress) => void,
+    mediaKinds: MediaKind[] = [],
   ): Promise<LocalModelSession> {
     if (typeof LanguageModel === "undefined") {
       throw new DOMException("Prompt API unavailable", "NotSupportedError");
@@ -153,7 +220,7 @@ export class BrowserLanguageModelAdapter implements LocalModelAdapter {
     let created: LanguageModel;
     try {
       created = await LanguageModel.create({
-        ...LANGUAGE_MODEL_OPTIONS,
+        ...optionsFor(mediaKinds),
         initialPrompts: nativePrompts(initialPrompts),
         signal,
         monitor(monitor) {

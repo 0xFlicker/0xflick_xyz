@@ -24,11 +24,13 @@ function normalizedProgressEvent(loaded: number): ProgressEvent {
 class NativeLanguageModel extends EventTarget {
   static availabilityValue: Availability = "available";
   static availabilityOptions: LanguageModelCreateCoreOptions | undefined;
+  static availabilityOptionsHistory: LanguageModelCreateCoreOptions[] = [];
   static createOptions: LanguageModelCreateOptions | undefined;
   static instance: NativeLanguageModel | null = null;
 
   static async availability(options?: LanguageModelCreateCoreOptions) {
     this.availabilityOptions = options;
+    if (options) this.availabilityOptionsHistory.push(options);
     return this.availabilityValue;
   }
 
@@ -76,6 +78,7 @@ describe("BrowserLanguageModelAdapter", () => {
     });
     NativeLanguageModel.availabilityValue = "available";
     NativeLanguageModel.availabilityOptions = undefined;
+    NativeLanguageModel.availabilityOptionsHistory = [];
     NativeLanguageModel.createOptions = undefined;
     NativeLanguageModel.instance = null;
     vi.stubGlobal("LanguageModel", NativeLanguageModel);
@@ -133,6 +136,24 @@ describe("BrowserLanguageModelAdapter", () => {
     session.destroy();
     session.destroy();
     expect(NativeLanguageModel.instance?.destroyed).toBe(1);
+  });
+
+  it("probes image and audio independently and creates multimodal sessions", async () => {
+    const adapter = new BrowserLanguageModelAdapter();
+    const capabilities = await adapter.capabilities();
+    expect(capabilities).toMatchObject({ text: true, image: true, audio: true });
+    expect(
+      NativeLanguageModel.availabilityOptionsHistory.map((options) =>
+        options.expectedInputs?.map((input) => input.type),
+      ),
+    ).toEqual([["text"], ["text", "image"], ["text", "audio"]]);
+
+    await adapter.create([], undefined, undefined, ["image", "audio"]);
+    expect(NativeLanguageModel.createOptions?.expectedInputs?.map((input) => input.type)).toEqual([
+      "text",
+      "image",
+      "audio",
+    ]);
   });
 
   it.each([

@@ -3,6 +3,7 @@ import type {
   LocalModelSession,
 } from "@/features/assistant/model/modelAdapter";
 import type {
+  MediaCapability,
   ModelAvailability,
   ModelContext,
   ModelErrorCode,
@@ -13,6 +14,7 @@ import type {
 
 export interface FakeModelScenario {
   availability?: ModelAvailability;
+  capabilities?: Partial<Pick<MediaCapability, "text" | "image" | "audio">>;
   chunks?: string[];
   context?: ModelContext;
   createError?: ModelErrorCode;
@@ -58,6 +60,7 @@ class FakeSession implements LocalModelSession {
     > &
       FakeModelScenario,
     private readonly onDestroy: () => void,
+    private readonly captureInput: (input: ModelInput) => void,
   ) {}
 
   context(): ModelContext {
@@ -70,9 +73,10 @@ class FakeSession implements LocalModelSession {
     this.onDestroy();
   }
 
-  async measure(_input: ModelInput, signal?: AbortSignal): Promise<ModelContext> {
+  async measure(input: ModelInput, signal?: AbortSignal): Promise<ModelContext> {
     if (this.destroyed) throw scenarioError("operation_failed");
     if (signal?.aborted) throw abortError();
+    this.captureInput(input);
     return this.scenario.context;
   }
 
@@ -81,8 +85,9 @@ class FakeSession implements LocalModelSession {
     return () => this.overflowListeners.delete(listener);
   }
 
-  async *stream(_input: ModelInput, signal?: AbortSignal): AsyncIterable<string> {
+  async *stream(input: ModelInput, signal?: AbortSignal): AsyncIterable<string> {
     if (this.destroyed) throw scenarioError("operation_failed");
+    this.captureInput(input);
 
     for (const [index, chunk] of this.scenario.chunks.entries()) {
       await wait(this.scenario.delayMs, signal);
@@ -100,6 +105,7 @@ class FakeSession implements LocalModelSession {
 export function createFakeModelAdapter(scenario: FakeModelScenario = {}): {
   adapter: LocalModelAdapter;
   createdPrompts: ModelPrompt[][];
+  capturedInputs: ModelInput[];
   lifecycle: { created: number; destroyed: number };
 } {
   const resolved = {
@@ -112,10 +118,22 @@ export function createFakeModelAdapter(scenario: FakeModelScenario = {}): {
   };
   const lifecycle = { created: 0, destroyed: 0 };
   const createdPrompts: ModelPrompt[][] = [];
+  const capturedInputs: ModelInput[] = [];
   let currentAvailability = resolved.availability;
+  const capabilities = {
+    text: scenario.capabilities?.text ?? true,
+    image: scenario.capabilities?.image ?? false,
+    audio: scenario.capabilities?.audio ?? false,
+  };
 
   const adapter: LocalModelAdapter = {
     availability: async () => currentAvailability,
+    capabilities: async () => ({
+      ...capabilities,
+      observedAt: Date.now(),
+      modelIdentity: "fake",
+      error: capabilities.text ? null : "media_unavailable",
+    }),
     create: async (initialPrompts, signal, onProgress) => {
       if (signal?.aborted) throw abortError();
       if (resolved.createError) throw scenarioError(resolved.createError);
@@ -138,11 +156,15 @@ export function createFakeModelAdapter(scenario: FakeModelScenario = {}): {
         currentAvailability = { state: "available" };
       }
       createdPrompts.push(initialPrompts);
-      return new FakeSession(resolved, () => {
-        lifecycle.destroyed += 1;
-      });
+      return new FakeSession(
+        resolved,
+        () => {
+          lifecycle.destroyed += 1;
+        },
+        (input) => capturedInputs.push(input),
+      );
     },
   };
 
-  return { adapter, createdPrompts, lifecycle };
+  return { adapter, createdPrompts, capturedInputs, lifecycle };
 }

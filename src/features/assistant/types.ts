@@ -9,6 +9,7 @@ export type TurnId = Identifier<"TurnId">;
 export type MessageId = Identifier<"MessageId">;
 export type AttemptId = Identifier<"AttemptId">;
 export type SubmissionId = Identifier<"SubmissionId">;
+export type MediaHistoryId = Identifier<"MediaHistoryId">;
 
 export function toSessionId(value: string): SessionId {
   return value as SessionId;
@@ -28,6 +29,10 @@ export function toAttemptId(value: string): AttemptId {
 
 export function toSubmissionId(value: string): SubmissionId {
   return value as SubmissionId;
+}
+
+export function toMediaHistoryId(value: string): MediaHistoryId {
+  return value as MediaHistoryId;
 }
 
 export type Timestamp = number;
@@ -75,7 +80,55 @@ export type ModelErrorCode =
   | "aborted"
   | "operation_failed"
   | "api_changed"
-  | "empty_response";
+  | "empty_response"
+  | "media_unavailable"
+  | "media_rehydration_required";
+
+export type MediaKind = "image" | "audio";
+export type MediaState = "none" | "ephemeral" | "requires_reattach" | "released";
+
+export interface MediaPart {
+  kind: MediaKind;
+  source: Blob;
+  mimeType: string;
+  name: string;
+  byteLength: number;
+  width?: number;
+  height?: number;
+  durationSeconds?: number;
+  accessibleLabel: string;
+}
+
+export interface MediaCapability {
+  text: boolean;
+  image: boolean;
+  audio: boolean;
+  observedAt: Timestamp;
+  modelIdentity: string | null;
+  error: ModelErrorCode | null;
+}
+
+export interface MediaHistoryRepresentation {
+  id: MediaHistoryId;
+  sessionId: SessionId;
+  turnId: TurnId;
+  messageId: MessageId;
+  kind: MediaKind;
+  thumbnail: Blob | null;
+  label: string;
+  accessibleLabel: string;
+  mimeType: string;
+  byteLength: number | null;
+  width: number | null;
+  height: number | null;
+  durationSeconds: number | null;
+  createdAt: Timestamp;
+}
+
+export type MediaHistoryDraft = Omit<
+  MediaHistoryRepresentation,
+  "id" | "sessionId" | "turnId" | "messageId"
+>;
 
 export interface ConversationTurn {
   id: TurnId;
@@ -91,6 +144,10 @@ export interface ConversationTurn {
   completedAt: Timestamp | null;
   interruptionReason: InterruptionReason | null;
   failureCode: ModelErrorCode | null;
+  mediaKinds?: MediaKind[];
+  mediaRepresentationIds?: MediaHistoryId[];
+  mediaOwnerWindowId?: string | null;
+  mediaState?: MediaState;
 }
 
 export type MessageRole = "user" | "assistant";
@@ -110,6 +167,7 @@ export interface Message {
   status: MessageStatus;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  mediaRepresentationIds?: MediaHistoryId[];
 }
 
 export type ContextStatus =
@@ -159,6 +217,7 @@ export interface ConversationSnapshot {
   messages: Message[];
   session: AssistantSession;
   turns: ConversationTurn[];
+  mediaRepresentations?: MediaHistoryRepresentation[];
 }
 
 export interface SettingsSnapshot {
@@ -205,6 +264,11 @@ export interface AcceptPromptInput {
   sessionId: SessionId | null;
   submissionId: SubmissionId;
   text: string;
+  media?: {
+    kinds: MediaKind[];
+    ownerWindowId: string;
+    representations: MediaHistoryDraft[];
+  };
 }
 
 export interface ClaimTurnInput {
@@ -212,6 +276,7 @@ export interface ClaimTurnInput {
   attemptId: AttemptId;
   epoch: number;
   sessionId: SessionId;
+  ownerWindowId?: string;
 }
 
 export interface ResponseCheckpoint {
@@ -237,7 +302,12 @@ export interface ContextCompareAndSwap {
 
 export interface ModelPrompt {
   role: "system" | "user" | "assistant";
-  content: string;
+  content: string | ModelContentPart[];
+}
+
+export interface ModelContentPart {
+  type: "text" | MediaKind;
+  value: string | Blob;
 }
 
 export type ModelInput = string | ModelPrompt[];

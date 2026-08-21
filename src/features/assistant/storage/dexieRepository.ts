@@ -22,6 +22,7 @@ import type {
   ConversationSnapshot,
   ConversationTurn,
   FinishTurnInput,
+  MediaHistoryRepresentation,
   Message,
   MutationResult,
   RepositoryErrorCode,
@@ -31,7 +32,7 @@ import type {
   SessionListSnapshot,
   SettingsSnapshot,
 } from "@/features/assistant/types";
-import { toMessageId, toSessionId, toTurnId } from "@/features/assistant/types";
+import { toMediaHistoryId, toMessageId, toSessionId, toTurnId } from "@/features/assistant/types";
 
 export class RepositoryMutationError extends Error {
   readonly code: RepositoryErrorCode;
@@ -72,6 +73,39 @@ export class DexieAssistantRepository implements AssistantRepository {
 
   mode(): "durable" {
     return "durable";
+  }
+
+  async markUnownedMediaTurns(at: number): Promise<void> {
+    await this.database.transaction(
+      "rw",
+      [this.database.sessions, this.database.turns, this.database.messages],
+      async () => {
+        const queued = (await this.database.turns.toArray()).filter(
+          (turn) => turn.status === "queued" && (turn.mediaRepresentationIds ?? []).length > 0,
+        );
+        for (const turn of queued) {
+          await this.database.turns.update(turn.id, {
+            status: "interrupted",
+            completedAt: at,
+            interruptionReason: "owner_closed",
+            mediaState: "requires_reattach",
+            mediaOwnerWindowId: null,
+          });
+          await this.database.messages.update(turn.assistantMessageId, {
+            status: "interrupted",
+            updatedAt: at,
+          });
+          const session = await this.database.sessions.get(turn.sessionId);
+          if (session) {
+            await this.database.sessions.put({
+              ...session,
+              historyRevision: session.historyRevision + 1,
+              updatedAt: at,
+            });
+          }
+        }
+      },
+    );
   }
 
   async initialize(): Promise<RepositorySnapshot> {
@@ -123,10 +157,11 @@ export class DexieAssistantRepository implements AssistantRepository {
   async getConversation(sessionId: SessionId): Promise<ConversationSnapshot | null> {
     const session = await this.database.sessions.get(sessionId);
     if (!session) return null;
-    const [turns, messages, context] = await Promise.all([
+    const [turns, messages, context, mediaRepresentations] = await Promise.all([
       this.database.turns.where("sessionId").equals(sessionId).toArray(),
       this.database.messages.where("sessionId").equals(sessionId).toArray(),
       this.database.contexts.get(sessionId),
+      this.database.mediaHistory.where("sessionId").equals(sessionId).toArray(),
     ]);
     turns.sort(
       (left, right) =>
@@ -140,7 +175,13 @@ export class DexieAssistantRepository implements AssistantRepository {
       if (user) ordered.push(user);
       if (assistant) ordered.push(assistant);
     }
-    return { context: context ?? null, messages: ordered, session, turns };
+    return {
+      context: context ?? null,
+      messages: ordered,
+      mediaRepresentations,
+      session,
+      turns,
+    };
   }
 
   async getSettings(): Promise<SettingsSnapshot> {
@@ -201,15 +242,20 @@ export class DexieAssistantRepository implements AssistantRepository {
 
   async acceptPrompt(input: AcceptPromptInput): Promise<AcceptedTurn> {
     const text = input.text.trim();
-    if (!text) throw new RepositoryMutationError("invalid_input");
+    if (!text && !input.media?.representations.length) {
+      throw new RepositoryMutationError("invalid_input");
+    }
 
     const result = await this.database.transaction(
       "rw",
-      this.database.meta,
-      this.database.sessions,
-      this.database.turns,
-      this.database.messages,
-      this.database.tombstones,
+      [
+        this.database.meta,
+        this.database.sessions,
+        this.database.turns,
+        this.database.messages,
+        this.database.mediaHistory,
+        this.database.tombstones,
+      ],
       async () => {
         const duplicate = await this.database.turns
           .where("submissionId")
@@ -244,11 +290,22 @@ export class DexieAssistantRepository implements AssistantRepository {
         const sessionId = session?.id ?? toSessionId(uuid());
         const userMessageId = toMessageId(uuid());
         const assistantMessageId = toMessageId(uuid());
+        const mediaRepresentations: MediaHistoryRepresentation[] = (
+          input.media?.representations ?? []
+        ).map((representation) => ({
+          ...representation,
+          id: toMediaHistoryId(uuid()),
+          sessionId,
+          turnId,
+          messageId: userMessageId,
+        }));
         if (!session) {
           session = {
             id: sessionId,
             epoch: meta.datasetEpoch,
-            title: titleFromPrompt(text),
+            title: titleFromPrompt(
+              text || mediaRepresentations[0]?.label || "Media question",
+            ),
             titleSourceTurnId: turnId,
             createdAt: input.at,
             updatedAt: input.at,
@@ -271,6 +328,10 @@ export class DexieAssistantRepository implements AssistantRepository {
           completedAt: null,
           interruptionReason: null,
           failureCode: null,
+          mediaKinds: input.media?.kinds ?? [],
+          mediaRepresentationIds: mediaRepresentations.map((representation) => representation.id),
+          mediaOwnerWindowId: input.media?.ownerWindowId ?? null,
+          mediaState: mediaRepresentations.length > 0 ? "ephemeral" : "none",
         };
         await this.database.turns.add(turn);
         await this.database.messages.bulkAdd([
@@ -283,6 +344,7 @@ export class DexieAssistantRepository implements AssistantRepository {
             status: "completed",
             createdAt: input.at,
             updatedAt: input.at,
+            mediaRepresentationIds: mediaRepresentations.map((representation) => representation.id),
           },
           {
             id: assistantMessageId,
@@ -295,6 +357,9 @@ export class DexieAssistantRepository implements AssistantRepository {
             updatedAt: input.at,
           },
         ]);
+        if (mediaRepresentations.length > 0) {
+          await this.database.mediaHistory.bulkAdd(mediaRepresentations);
+        }
         await this.database.sessions.update(sessionId, { updatedAt: input.at });
         const requestPersistence = meta.persistenceRequestedAt === null;
         await this.database.meta.put({
@@ -352,7 +417,12 @@ export class DexieAssistantRepository implements AssistantRepository {
           (left, right) =>
             left.promptCreatedAt - right.promptCreatedAt || left.id.localeCompare(right.id),
         );
-        const turn = queued[0];
+        const turn = queued.find(
+          (candidate) =>
+            candidate.mediaState === "none" ||
+            (candidate.mediaOwnerWindowId !== null &&
+              candidate.mediaOwnerWindowId === input.ownerWindowId),
+        );
         if (!turn) {
           if (orphans.length > 0) await this.database.sessions.put(session);
           return null;
@@ -433,6 +503,9 @@ export class DexieAssistantRepository implements AssistantRepository {
             failureCode: input.failureCode ?? null,
             interruptionReason: input.interruptionReason ?? null,
             status: input.status,
+            mediaState:
+              (validated.turn.mediaRepresentationIds ?? []).length > 0 ? "released" : "none",
+            mediaOwnerWindowId: null,
           });
           const session = await this.database.sessions.get(input.sessionId);
           if (!session) return { ok: false, code: "session_deleted" };
@@ -511,6 +584,7 @@ export class DexieAssistantRepository implements AssistantRepository {
           this.database.sessions,
           this.database.turns,
           this.database.messages,
+          this.database.mediaHistory,
           this.database.contexts,
           this.database.tombstones,
         ],
@@ -529,6 +603,10 @@ export class DexieAssistantRepository implements AssistantRepository {
             .primaryKeys();
           await this.database.messages.bulkDelete(messages);
           await this.database.turns.bulkDelete(turns.map((turn) => turn.id));
+          await this.database.mediaHistory
+            .where("sessionId")
+            .equals(sessionId)
+            .delete();
           await this.database.contexts.delete(sessionId);
           await this.database.sessions.delete(sessionId);
           const meta = (await this.database.meta.get("app")) ?? appMeta(at);
@@ -557,6 +635,7 @@ export class DexieAssistantRepository implements AssistantRepository {
           this.database.sessions,
           this.database.turns,
           this.database.messages,
+          this.database.mediaHistory,
           this.database.contexts,
           this.database.settings,
           this.database.tombstones,
@@ -567,6 +646,7 @@ export class DexieAssistantRepository implements AssistantRepository {
             this.database.sessions.clear(),
             this.database.turns.clear(),
             this.database.messages.clear(),
+            this.database.mediaHistory.clear(),
             this.database.contexts.clear(),
             this.database.settings.clear(),
             this.database.tombstones.clear(),

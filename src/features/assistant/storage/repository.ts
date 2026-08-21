@@ -8,6 +8,7 @@ import type {
   ConversationSnapshot,
   FinishTurnInput,
   MutationResult,
+  MediaHistoryRepresentation,
   PersonalitySetting,
   RepositoryMode,
   RepositoryErrorCode,
@@ -34,6 +35,7 @@ export interface AssistantRepository {
   getSettings(): Promise<SettingsSnapshot>;
   initialize(): Promise<RepositorySnapshot>;
   mode(): RepositoryMode;
+  markUnownedMediaTurns?(at: number): Promise<void>;
   checkpointResponse(input: ResponseCheckpoint): Promise<MutationResult>;
   savePersonality(text: string, at: number): Promise<MutationResult>;
   selectSession(sessionId: SessionId | null, at: number): Promise<MutationResult>;
@@ -50,6 +52,12 @@ export interface AssistantRepository {
     listener: (value: SettingsSnapshot) => void,
     onError?: RepositoryFailureListener,
   ): Unsubscribe;
+}
+
+export function mediaHistoryForConversation(
+  conversation: ConversationSnapshot | null,
+): MediaHistoryRepresentation[] {
+  return conversation?.mediaRepresentations ?? [];
 }
 
 export const blankPersonality = (): PersonalitySetting => ({

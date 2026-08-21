@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -74,5 +74,49 @@ describe("Composer activity states", () => {
 
     expect(screen.getByLabelText("Message the local assistant")).toBeVisible();
     expect(screen.getByRole("button", { name: "Stop response" })).toBeVisible();
+  });
+
+  it("stages a pasted image as media", async () => {
+    const onMediaChange = vi.fn();
+    const file = new File([new Uint8Array([1, 2, 3])], "pasted.png", { type: "image/png" });
+    render(
+      <Composer
+        {...requiredProps}
+        capabilities={{
+          text: true,
+          image: true,
+          audio: false,
+          observedAt: 1,
+          modelIdentity: "fake",
+          error: null,
+        }}
+        onMediaChange={onMediaChange}
+        onStop={vi.fn()}
+        work={{ status: "idle" }}
+      />,
+    );
+
+    fireEvent.paste(screen.getByLabelText("Message the local assistant"), {
+      clipboardData: {
+        files: [],
+        items: [
+          {
+            getAsFile: () => file,
+            kind: "file",
+            type: "image/png",
+          },
+        ],
+      },
+    });
+
+    await waitFor(() =>
+      expect(onMediaChange).toHaveBeenCalledWith([
+        expect.objectContaining({
+          kind: "image",
+          name: "pasted.png",
+          source: file,
+        }),
+      ]),
+    );
   });
 });
