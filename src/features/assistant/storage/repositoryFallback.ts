@@ -62,6 +62,10 @@ export class ResilientAssistantRepository implements AssistantRepository {
     return this.active.mode();
   }
 
+  async markUnownedMediaTurns(at: number): Promise<void> {
+    await this.active.markUnownedMediaTurns?.(at);
+  }
+
   async initialize(): Promise<RepositorySnapshot> {
     const lifecycleRevision = this.lifecycleRevision;
     try {

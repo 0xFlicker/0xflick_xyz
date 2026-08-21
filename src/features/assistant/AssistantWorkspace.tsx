@@ -1,5 +1,6 @@
 "use client";
 
+import type { DragEvent } from "react";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { v4 as uuid } from "uuid";
 
@@ -13,7 +14,7 @@ import {
 import { AssistantShell } from "@/features/assistant/components/AssistantShell";
 import { AvailabilityPanel } from "@/features/assistant/components/AvailabilityPanel";
 import { ConfirmationDialog } from "@/features/assistant/components/ConfirmationDialog";
-import { Composer } from "@/features/assistant/components/Composer";
+import { Composer, type ComposerHandle } from "@/features/assistant/components/Composer";
 import { Transcript } from "@/features/assistant/components/Transcript";
 import {
   ASSISTANT_LOCK_PREFIX,
@@ -31,6 +32,8 @@ import { assistantReducer, initialAssistantState } from "@/features/assistant/re
 import { blankPersonality, type AssistantRepository } from "@/features/assistant/storage/repository";
 import { MemoryAssistantRepository } from "@/features/assistant/storage/memoryRepository";
 import { DexieAssistantRepository } from "@/features/assistant/storage/dexieRepository";
+import { EphemeralMediaStore } from "@/features/assistant/storage/ephemeralMediaStore";
+import { createMediaHistoryDraft } from "@/features/assistant/storage/mediaHistory";
 import {
   RepositoryLifecycleCancelledError,
   ResilientAssistantRepository,
@@ -39,6 +42,8 @@ import { useRepositoryQuery } from "@/features/assistant/storage/useRepositoryQu
 import type {
   ConversationSnapshot,
   ContextState,
+  MediaCapability,
+  MediaPart,
   ModelContext,
   ModelErrorCode,
   RepositorySnapshot,
@@ -88,6 +93,8 @@ function errorCode(error: unknown): ModelErrorCode {
       case "operation_failed":
       case "api_changed":
       case "empty_response":
+      case "media_unavailable":
+      case "media_rehydration_required":
         return error.message;
     }
   }
@@ -141,6 +148,7 @@ export function AssistantWorkspace({
     [providedRepository],
   );
   const sessionCache = useMemo(() => new ModelSessionCache(), []);
+  const mediaStore = useMemo(() => new EphemeralMediaStore(), []);
   const [state, dispatch] = useReducer(assistantReducer, initialAssistantState);
   const subscribeSettings = useCallback(
     (listener: (value: SettingsSnapshot) => void) =>
@@ -152,6 +160,8 @@ export function AssistantWorkspace({
   const settings = useRepositoryQuery(emptySettings, subscribeSettings);
   const personality = settings.personality;
   const [draft, setDraft] = useState("");
+  const [media, setMedia] = useState<MediaPart[]>([]);
+  const [capabilities, setCapabilities] = useState<MediaCapability | null>(null);
   const [setupPending, setSetupPending] = useState(false);
   const [sessions, setSessions] = useState<SessionListSnapshot>(emptySessions);
   const [conversation, setConversation] = useState<ConversationSnapshot | null>(null);
@@ -162,9 +172,12 @@ export function AssistantWorkspace({
     | null
   >(null);
   const activeRef = useRef<ActiveGeneration | null>(null);
+  const composerRef = useRef<ComposerHandle>(null);
+  const dragDepthRef = useRef(0);
   const setupRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
   const selectedSessionIdRef = useRef<SessionId | null>(null);
+  const [dropActive, setDropActive] = useState(false);
 
   const syncStorageMode = useCallback((): void => {
     if (repository.mode() === "temporary") {
@@ -205,10 +218,26 @@ export function AssistantWorkspace({
       const availability = await adapter.availability();
       if (mountedRef.current) {
         if (availability.state !== "available") sessionCache.clear();
+        if (availability.state === "available") {
+          const snapshot = await adapter.capabilities?.();
+          setCapabilities(
+            snapshot ?? {
+              text: true,
+              image: false,
+              audio: false,
+              observedAt: Date.now(),
+              modelIdentity: null,
+              error: null,
+            },
+          );
+        } else {
+          setCapabilities(null);
+        }
         dispatch({ type: "environment/availability", availability });
       }
     } catch (error) {
       sessionCache.clear();
+      setCapabilities(null);
       if (mountedRef.current) {
         dispatch({ type: "environment/failed", code: errorCode(error) });
       }
@@ -246,6 +275,9 @@ export function AssistantWorkspace({
         setupRef.current = null;
         setSetupPending(false);
         sessionCache.store(identity, session);
+        void adapter.capabilities?.().then((snapshot) => {
+          if (mountedRef.current && setupRef.current === null) setCapabilities(snapshot ?? null);
+        });
         dispatch({ type: "environment/ready" });
       })
       .catch(async (error) => {
@@ -295,6 +327,21 @@ export function AssistantWorkspace({
           schedule();
         } else {
           if (availability.state !== "available") sessionCache.clear();
+          if (availability.state === "available") {
+            const snapshot = await adapter.capabilities?.();
+            setCapabilities(
+              snapshot ?? {
+                text: true,
+                image: false,
+                audio: false,
+                observedAt: Date.now(),
+                modelIdentity: null,
+                error: null,
+              },
+            );
+          } else {
+            setCapabilities(null);
+          }
           dispatch({ type: "environment/availability", availability });
         }
       } catch (error) {
@@ -334,6 +381,7 @@ export function AssistantWorkspace({
         throw error;
       }
       if (!active) return;
+      await repository.markUnownedMediaTurns?.(Date.now());
       setSessions(initial.sessions);
       setSelectedSessionId(initial.sessions.activeSessionId);
       selectedSessionIdRef.current = initial.sessions.activeSessionId;
@@ -358,11 +406,12 @@ export function AssistantWorkspace({
       setupRef.current = null;
       activeRef.current?.abort.abort();
       activeRef.current?.session?.destroy();
+      mediaStore.releaseAll("reload");
       sessionCache.clear();
       unsubscribeSessions();
       repository.destroy();
     };
-  }, [recheckAvailability, repository, sessionCache]);
+  }, [mediaStore, recheckAvailability, repository, sessionCache]);
 
   useEffect(() => {
     if (!selectedSessionId) {
@@ -402,6 +451,7 @@ export function AssistantWorkspace({
         attemptId,
         epoch,
         sessionId,
+        ownerWindowId: mediaStore.ownerWindowId,
       });
       if (!claimed) return false;
 
@@ -435,12 +485,29 @@ export function AssistantWorkspace({
           (message) => message.id === claimed.turn.userMessageId,
         );
         if (!userMessage) throw new Error("operation_failed");
+        const mediaParts = (claimed.turn.mediaRepresentationIds ?? []).length > 0
+          ? mediaStore.claim(claimed.turn.submissionId, mediaStore.ownerWindowId)
+          : [];
+        if ((claimed.turn.mediaRepresentationIds ?? []).length > 0 && !mediaParts) {
+          throw new Error("media_rehydration_required");
+        }
+        if (mediaParts && mediaParts.length > 0) {
+          const capability = await adapter.capabilities?.();
+          if (
+            !capability ||
+            !capability.text ||
+            mediaParts.some((part) => !capability[part.kind])
+          ) {
+            throw new Error("media_unavailable");
+          }
+        }
 
         const identity = modelSessionIdentity(
           latestConversation,
           currentPersonality.revision,
         );
-        let modelSession = sessionCache.take(identity);
+        if (mediaParts && mediaParts.length > 0) sessionCache.clear();
+        let modelSession = mediaParts && mediaParts.length > 0 ? null : sessionCache.take(identity);
         if (!modelSession) {
           modelSession = await adapter.create(
             buildReconstructionPrompts({
@@ -448,6 +515,8 @@ export function AssistantWorkspace({
               personality: currentPersonality,
             }),
             abort.signal,
+            undefined,
+            mediaParts?.map((part) => part.kind),
           );
         }
         active.session = modelSession;
@@ -475,7 +544,7 @@ export function AssistantWorkspace({
           })();
         });
 
-        const nextPrompt = currentTurnPrompt(userMessage.text);
+        const nextPrompt = currentTurnPrompt(userMessage.text, mediaParts ?? []);
         const projected = projectedContext(
           modelSession.context(),
           await modelSession.measure(nextPrompt, abort.signal),
@@ -579,7 +648,11 @@ export function AssistantWorkspace({
           completedConversation = await repository.getConversation(sessionId);
         }
         if (activeRef.current === active) setConversation(completedConversation);
+        if ((claimed.turn.mediaRepresentationIds ?? []).length > 0) {
+          mediaStore.release(claimed.turn.submissionId, "terminal");
+        }
         if (
+          (!mediaParts || mediaParts.length === 0) &&
           completedConversation &&
           selectedSessionIdRef.current === sessionId &&
           activeRef.current === active
@@ -610,6 +683,9 @@ export function AssistantWorkspace({
           if (active.reason === "visitor") {
             setConversation(await repository.getConversation(sessionId));
           }
+          if (claimed.turn.mediaRepresentationIds?.length) {
+            mediaStore.retainForRetry(claimed.turn.submissionId);
+          }
           if (mountedRef.current) dispatch({ type: "work/stopped" });
         } else {
           await repository.finishTurn({
@@ -622,6 +698,13 @@ export function AssistantWorkspace({
             text: active.lastText,
             turnId: claimed.turnId,
           });
+          if (claimed.turn.mediaRepresentationIds?.length) {
+            if (code === "media_rehydration_required") {
+              mediaStore.release(claimed.turn.submissionId, "unavailable");
+            } else {
+              mediaStore.retainForRetry(claimed.turn.submissionId);
+            }
+          }
           if (activeRef.current === active) {
             setConversation(await repository.getConversation(sessionId));
           }
@@ -634,7 +717,7 @@ export function AssistantWorkspace({
       }
       return true;
     },
-    [adapter, persistContextMeasurement, repository, sessionCache, syncStorageMode],
+    [adapter, mediaStore, persistContextMeasurement, repository, sessionCache, syncStorageMode],
   );
 
   const processAcceptedTurn = useCallback(
@@ -659,30 +742,62 @@ export function AssistantWorkspace({
   );
 
   const submit = useCallback(
-    async (text: string): Promise<void> => {
+    async (text: string, submittedMedia: MediaPart[] = media): Promise<ReturnType<typeof toSubmissionId> | null> => {
+      const submissionId = toSubmissionId(uuid());
+      const staged = submittedMedia.length > 0
+        ? mediaStore.stage(submissionId, submittedMedia)
+        : null;
       try {
+        if (staged) {
+          const availability = await adapter.availability();
+          const capability = await adapter.capabilities?.();
+          if (
+            availability.state !== "available" ||
+            !capability ||
+            !capability.text ||
+            staged.parts.some((part) => !capability[part.kind])
+          ) {
+            throw new Error("media_unavailable");
+          }
+        }
+        const representations = staged
+          ? await Promise.all(staged.parts.map((part) => createMediaHistoryDraft(part)))
+          : [];
         const accepted = await repository.acceptPrompt({
           at: Date.now(),
           sessionId: selectedSessionId,
-          submissionId: toSubmissionId(uuid()),
+          submissionId,
           text,
+          media: staged
+            ? {
+                kinds: staged.parts.map((part) => part.kind),
+                ownerWindowId: staged.ownerWindowId,
+                representations,
+              }
+            : undefined,
         });
+        if (staged) mediaStore.bindTurn(submissionId, accepted.turnId);
         setDraft("");
+        setMedia([]);
         setSelectedSessionId(accepted.sessionId);
         selectedSessionIdRef.current = accepted.sessionId;
         await repository.selectSession(accepted.sessionId, Date.now());
         dispatch({ type: "work/queued", turnId: accepted.turnId });
         await processAcceptedTurn(accepted.sessionId, accepted.epoch);
+        return submissionId;
       } catch (error) {
-        const code = error instanceof Error ? error.message : "storage_write_failed";
-        if (repository.mode() === "temporary" && code !== "session_limit") {
+        if (staged) mediaStore.release(submissionId, "unavailable");
+        const rawCode = error instanceof Error ? error.message : null;
+        const code = errorCode(error);
+        if (repository.mode() === "temporary" && rawCode !== "session_limit") {
           dispatch({ type: "storage/temporary", reason: "storage_write_failed" });
         } else {
-          dispatch({ type: "work/failed", code: "operation_failed" });
+          dispatch({ type: "work/failed", code });
         }
+        return null;
       }
     },
-    [processAcceptedTurn, repository, selectedSessionId],
+    [adapter, media, mediaStore, processAcceptedTurn, repository, selectedSessionId],
   );
 
   const compactCurrentConversation = useCallback(async (): Promise<void> => {
@@ -761,10 +876,12 @@ export function AssistantWorkspace({
     setupRef.current = null;
     setSetupPending(false);
     sessionCache.clear();
+    mediaStore.releaseAll("cancelled");
     selectedSessionIdRef.current = null;
     setSelectedSessionId(null);
     setConversation(null);
     setDraft("");
+    setMedia([]);
     dispatch({ type: "work/idle" });
     void repository.selectSession(null, Date.now());
   }
@@ -781,6 +898,8 @@ export function AssistantWorkspace({
     setupRef.current = null;
     setSetupPending(false);
     sessionCache.clear();
+    mediaStore.releaseAll("cancelled");
+    setMedia([]);
     selectedSessionIdRef.current = sessionId;
     setSelectedSessionId(sessionId);
     void repository.selectSession(sessionId, Date.now());
@@ -791,7 +910,18 @@ export function AssistantWorkspace({
     const message = turn
       ? conversation?.messages.find((candidate) => candidate.id === turn.userMessageId)
       : null;
-    if (message) void submit(message.text);
+    if (!turn || !message) return;
+    const hasMedia = (turn.mediaRepresentationIds ?? []).length > 0;
+    const retryMedia = hasMedia
+      ? mediaStore.claim(turn.submissionId, mediaStore.ownerWindowId)
+      : [];
+    if (hasMedia && !retryMedia) {
+      dispatch({ type: "work/failed", code: "media_rehydration_required" });
+      return;
+    }
+    void submit(message.text, retryMedia ?? []).then((submissionId) => {
+      if (submissionId && hasMedia) mediaStore.release(turn.submissionId, "replaced");
+    });
   }
 
   async function confirmDestructiveAction(): Promise<void> {
@@ -803,6 +933,8 @@ export function AssistantWorkspace({
     setupRef.current = null;
     setSetupPending(false);
     sessionCache.clear();
+    mediaStore.releaseAll("cancelled");
+    setMedia([]);
 
     const result =
       pending.kind === "clear"
@@ -834,6 +966,57 @@ export function AssistantWorkspace({
   }
 
   const ready = state.environment.status === "ready";
+  const workBusy =
+    state.work.status === "queued" ||
+    state.work.status === "checking_context" ||
+    state.work.status === "compacting" ||
+    state.work.status === "generating";
+  const dropEnabled = ready && !workBusy && Boolean(capabilities?.image || capabilities?.audio);
+  const dropLabel = capabilities?.image && capabilities.audio
+    ? "Images and audio"
+    : capabilities?.image
+      ? "Images"
+      : "Audio";
+
+  useEffect(() => {
+    if (dropEnabled) return;
+    dragDepthRef.current = 0;
+    setDropActive(false);
+  }, [dropEnabled]);
+
+  function hasFileDrag(dataTransfer: DataTransfer): boolean {
+    return Array.from(dataTransfer.types).includes("Files");
+  }
+
+  function handleDragEnter(event: DragEvent<HTMLDivElement>): void {
+    if (!dropEnabled || !hasFileDrag(event.dataTransfer)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    dragDepthRef.current += 1;
+    setDropActive(true);
+  }
+
+  function handleDragOver(event: DragEvent<HTMLDivElement>): void {
+    if (!dropEnabled || !hasFileDrag(event.dataTransfer)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLDivElement>): void {
+    if (!dropEnabled || dragDepthRef.current === 0) return;
+    event.preventDefault();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setDropActive(false);
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>): void {
+    if (!dropEnabled || !hasFileDrag(event.dataTransfer)) return;
+    event.preventDefault();
+    dragDepthRef.current = 0;
+    setDropActive(false);
+    composerRef.current?.addFiles(Array.from(event.dataTransfer.files));
+  }
+
   return (
     <>
       <AssistantShell
@@ -858,8 +1041,20 @@ export function AssistantWorkspace({
         sessions={sessions}
         state={state}
       >
-      <Transcript conversation={conversation} onRetry={retry} />
-      <footer className="shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-8 lg:px-12">
+      <div
+        className="relative flex min-h-0 flex-1 flex-col"
+        data-assistant-dropzone
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        <Transcript
+          conversation={conversation}
+          onRetry={retry}
+          temporary={repository.mode() === "temporary"}
+        />
+        <footer className="shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-8 lg:px-12">
         <div className="mx-auto max-w-3xl">
           {ready && state.work.status === "failed" ? (
             <p
@@ -868,6 +1063,10 @@ export function AssistantWorkspace({
             >
               {state.work.code === "context_too_large"
                 ? "Generation did not proceed with verified full context. Compact this chat, shorten the prompt, or start a new chat."
+                : state.work.code === "media_rehydration_required"
+                  ? "This attachment is no longer available in this page. Reattach it to analyze it again."
+                  : state.work.code === "media_unavailable"
+                    ? "The current local model no longer accepts that attachment. Remove it or prepare a model with the required capability."
                 : state.work.code === "output_filtered"
                   ? "Chrome did not return that response, possibly because its built-in safety checks blocked the output. Rephrase the prompt or start a new chat."
                   : "The local assistant could not complete that response. Retry it, edit the prompt, or start a new chat."}
@@ -875,7 +1074,11 @@ export function AssistantWorkspace({
           ) : null}
           {ready ? (
             <Composer
+              capabilities={capabilities}
+              media={media}
               onChange={setDraft}
+              onMediaChange={setMedia}
+              ref={composerRef}
               onStop={() => {
                 activeRef.current?.abort.abort();
                 activeRef.current?.session?.destroy();
@@ -902,7 +1105,22 @@ export function AssistantWorkspace({
             Responses are generated locally on this device. This assistant has no tools or live web access. Answers may be wrong or outdated—double-check important results.
           </p>
         </div>
-      </footer>
+        </footer>
+        {dropActive ? (
+          <div
+            aria-live="polite"
+            className="pointer-events-none absolute inset-3 z-10 flex items-center justify-center rounded-[1.6rem] border-2 border-dashed border-cyan-500 bg-cyan-50/90 p-6 text-center shadow-[0_18px_60px_-30px_rgba(8,145,178,0.45)] dark:border-cyan-300 dark:bg-cyan-950/85"
+            role="status"
+          >
+            <div>
+              <p className="text-lg font-semibold text-cyan-950 dark:text-cyan-50">Drop to attach</p>
+              <p className="mt-1 text-sm text-cyan-800 dark:text-cyan-200">
+                {dropLabel} will be staged for your next message.
+              </p>
+            </div>
+          </div>
+        ) : null}
+      </div>
       </AssistantShell>
       <ConfirmationDialog
         confirmLabel={confirmation?.kind === "clear" ? "Clear everything" : "Delete chat"}

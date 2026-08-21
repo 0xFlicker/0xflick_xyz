@@ -24,6 +24,7 @@ import type {
   ConversationSnapshot,
   ConversationTurn,
   FinishTurnInput,
+  MediaHistoryRepresentation,
   Message,
   MutationResult,
   PersonalitySetting,
@@ -35,6 +36,7 @@ import type {
   SubmissionId,
 } from "@/features/assistant/types";
 import {
+  toMediaHistoryId,
   toMessageId,
   toSessionId,
   toTurnId,
@@ -62,6 +64,7 @@ export class MemoryAssistantRepository implements AssistantRepository {
   private readonly turns = new Map<string, ConversationTurn>();
   private readonly messages = new Map<string, Message>();
   private readonly contexts = new Map<SessionId, ContextState>();
+  private readonly mediaHistory = new Map<string, MediaHistoryRepresentation>();
   private readonly submissions = new Map<SubmissionId, AcceptedTurn>();
   private readonly sessionListeners = new Set<Listener<SessionListSnapshot>>();
   private readonly settingsListeners = new Set<Listener<SettingsSnapshot>>();
@@ -83,11 +86,28 @@ export class MemoryAssistantRepository implements AssistantRepository {
     return "temporary";
   }
 
+  async markUnownedMediaTurns(at: number): Promise<void> {
+    for (const turn of this.turns.values()) {
+      if (turn.status !== "queued" || (turn.mediaRepresentationIds ?? []).length === 0) continue;
+      this.turns.set(turn.id, {
+        ...turn,
+        status: "interrupted",
+        completedAt: at,
+        interruptionReason: "owner_closed",
+        mediaState: "requires_reattach",
+        mediaOwnerWindowId: null,
+      });
+      const message = this.messages.get(turn.assistantMessageId);
+      if (message) this.messages.set(message.id, { ...message, status: "interrupted", updatedAt: at });
+    }
+  }
+
   hydrate(snapshot: RepositorySnapshot): void {
     this.sessions.clear();
     this.turns.clear();
     this.messages.clear();
     this.contexts.clear();
+    this.mediaHistory.clear();
     this.submissions.clear();
     this.meta = {
       ...this.meta,
@@ -108,6 +128,9 @@ export class MemoryAssistantRepository implements AssistantRepository {
         });
       });
       conversation.messages.forEach((message) => this.messages.set(message.id, clone(message)));
+      conversation.mediaRepresentations?.forEach((representation) =>
+        this.mediaHistory.set(representation.id, clone(representation)),
+      );
       if (conversation.context) {
         this.contexts.set(conversation.session.id, clone(conversation.context));
       }
@@ -179,7 +202,9 @@ export class MemoryAssistantRepository implements AssistantRepository {
 
   async acceptPrompt(input: AcceptPromptInput): Promise<AcceptedTurn> {
     const text = input.text.trim();
-    if (text.length === 0) throw new Error("invalid_input");
+    if (text.length === 0 && !input.media?.representations.length) {
+      throw new Error("invalid_input");
+    }
 
     const duplicate = this.submissions.get(input.submissionId);
     if (duplicate) return clone(duplicate);
@@ -192,12 +217,21 @@ export class MemoryAssistantRepository implements AssistantRepository {
     const sessionId = session?.id ?? toSessionId(uuid());
     const userMessageId = toMessageId(uuid());
     const assistantMessageId = toMessageId(uuid());
+    const mediaRepresentations: MediaHistoryRepresentation[] = (
+      input.media?.representations ?? []
+    ).map((representation) => ({
+      ...representation,
+      id: toMediaHistoryId(uuid()),
+      sessionId,
+      turnId,
+      messageId: userMessageId,
+    }));
 
     if (!session) {
       session = {
         id: sessionId,
         epoch: this.meta.datasetEpoch,
-        title: titleFromPrompt(text),
+        title: titleFromPrompt(text || mediaRepresentations[0]?.label || "Media question"),
         titleSourceTurnId: turnId,
         createdAt: input.at,
         updatedAt: input.at,
@@ -220,6 +254,10 @@ export class MemoryAssistantRepository implements AssistantRepository {
       completedAt: null,
       interruptionReason: null,
       failureCode: null,
+      mediaKinds: input.media?.kinds ?? [],
+      mediaRepresentationIds: mediaRepresentations.map((representation) => representation.id),
+      mediaOwnerWindowId: input.media?.ownerWindowId ?? null,
+      mediaState: mediaRepresentations.length > 0 ? "ephemeral" : "none",
     };
     const userMessage: Message = {
       id: userMessageId,
@@ -230,6 +268,7 @@ export class MemoryAssistantRepository implements AssistantRepository {
       status: "completed",
       createdAt: input.at,
       updatedAt: input.at,
+      mediaRepresentationIds: mediaRepresentations.map((representation) => representation.id),
     };
     const assistantMessage: Message = {
       id: assistantMessageId,
@@ -244,6 +283,9 @@ export class MemoryAssistantRepository implements AssistantRepository {
     this.turns.set(turnId, turn);
     this.messages.set(userMessageId, userMessage);
     this.messages.set(assistantMessageId, assistantMessage);
+    mediaRepresentations.forEach((representation) =>
+      this.mediaHistory.set(representation.id, clone(representation)),
+    );
     this.sessions.set(sessionId, { ...session, updatedAt: input.at });
     this.meta = { ...this.meta, activeSessionId: sessionId, updatedAt: input.at };
 
@@ -263,7 +305,13 @@ export class MemoryAssistantRepository implements AssistantRepository {
       .sort(
         (left, right) =>
           left.promptCreatedAt - right.promptCreatedAt || left.id.localeCompare(right.id),
-      )[0];
+      )
+      .find(
+        (candidate) =>
+          candidate.mediaState === "none" ||
+          (candidate.mediaOwnerWindowId !== null &&
+            candidate.mediaOwnerWindowId === input.ownerWindowId),
+      );
     if (!turn) return null;
 
     const claimedTurn: ConversationTurn = {
@@ -326,6 +374,8 @@ export class MemoryAssistantRepository implements AssistantRepository {
       failureCode: input.failureCode ?? null,
       interruptionReason: input.interruptionReason ?? null,
       status: input.status,
+      mediaState: (validated.turn.mediaRepresentationIds ?? []).length > 0 ? "released" : "none",
+      mediaOwnerWindowId: null,
     });
     const session = this.sessions.get(input.sessionId);
     if (session) {
@@ -381,6 +431,9 @@ export class MemoryAssistantRepository implements AssistantRepository {
       this.messages.delete(turn.assistantMessageId);
       this.submissions.delete(turn.submissionId);
     }
+    for (const [id, representation] of this.mediaHistory) {
+      if (representation.sessionId === sessionId) this.mediaHistory.delete(id);
+    }
     if (this.meta.activeSessionId === sessionId) {
       this.meta = {
         ...this.meta,
@@ -398,6 +451,7 @@ export class MemoryAssistantRepository implements AssistantRepository {
     this.sessions.clear();
     this.turns.clear();
     this.messages.clear();
+    this.mediaHistory.clear();
     this.contexts.clear();
     this.submissions.clear();
     this.personality = blankPersonality();
@@ -477,6 +531,9 @@ export class MemoryAssistantRepository implements AssistantRepository {
     return clone({
       context: this.contexts.get(sessionId) ?? null,
       messages: orderedMessages,
+      mediaRepresentations: [...this.mediaHistory.values()].filter(
+        (representation) => representation.sessionId === sessionId,
+      ),
       session,
       turns,
     });

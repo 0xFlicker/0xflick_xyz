@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MessageContent } from "@/features/assistant/components/MessageContent";
+import { MediaAttachment } from "@/features/assistant/components/MediaAttachment";
 import type {
   ConversationSnapshot,
   Message,
@@ -10,9 +11,11 @@ import type {
 interface TranscriptProps {
   conversation: ConversationSnapshot | null;
   onRetry: (turnId: TurnId) => void;
+  temporary?: boolean;
 }
 
-function terminalLabel(message: Message): string | null {
+function terminalLabel(message: Message, requiresReattach: boolean): string | null {
+  if (requiresReattach) return "Attachment needs reattaching";
   switch (message.status) {
     case "interrupted":
       return "Stopped";
@@ -23,7 +26,7 @@ function terminalLabel(message: Message): string | null {
   }
 }
 
-export function Transcript({ conversation, onRetry }: TranscriptProps) {
+export function Transcript({ conversation, onRetry, temporary = false }: TranscriptProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [following, setFollowing] = useState(true);
   const [copyState, setCopyState] = useState<Record<string, "copied" | "failed">>(
@@ -32,6 +35,10 @@ export function Transcript({ conversation, onRetry }: TranscriptProps) {
   const messagesById = useMemo(
     () =>
       new Map(conversation?.messages.map((message) => [message.id, message] as const)),
+    [conversation],
+  );
+  const mediaById = useMemo(
+    () => new Map((conversation?.mediaRepresentations ?? []).map((item) => [item.id, item] as const)),
     [conversation],
   );
 
@@ -86,11 +93,28 @@ export function Transcript({ conversation, onRetry }: TranscriptProps) {
             const user = messagesById.get(turn.userMessageId);
             const assistant = messagesById.get(turn.assistantMessageId);
             if (!user || !assistant) return null;
-            const label = terminalLabel(assistant);
+            const label = terminalLabel(
+              assistant,
+              turn.mediaState === "requires_reattach" || turn.interruptionReason === "owner_closed",
+            );
             return (
               <article className="flex flex-col gap-5" key={turn.id}>
                 <div className="ml-auto min-w-0 max-w-[88%] break-words whitespace-pre-wrap rounded-[1.4rem] rounded-br-md bg-zinc-900 px-5 py-3.5 text-[0.95rem] leading-7 text-white dark:bg-zinc-100 dark:text-zinc-950">
                   {user.text}
+                  {(user.mediaRepresentationIds ?? []).length > 0 ? (
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {(user.mediaRepresentationIds ?? []).map((id) => {
+                        const representation = mediaById.get(id);
+                        return representation ? (
+                          <MediaAttachment
+                            key={id}
+                            representation={representation}
+                            temporary={temporary}
+                          />
+                        ) : null;
+                      })}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="group min-w-0 max-w-full pl-1 sm:pl-4">
                   {assistant.text ? (
@@ -123,7 +147,8 @@ export function Transcript({ conversation, onRetry }: TranscriptProps) {
                       </span>
                     </div>
                   ) : null}
-                  {turn.status === "failed" ? (
+                  {turn.status === "failed" ||
+                  (turn.status === "interrupted" && turn.interruptionReason === "visitor") ? (
                     <button
                       className="mt-3 rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-800 outline-none hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-cyan-500 dark:border-white/20 dark:text-white dark:hover:bg-white/10"
                       onClick={() => onRetry(turn.id)}

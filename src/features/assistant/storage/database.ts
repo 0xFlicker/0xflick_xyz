@@ -10,6 +10,7 @@ import type {
   ContextState,
   ConversationTurn,
   Message,
+  MediaHistoryRepresentation,
   PersonalitySetting,
   SessionTombstone,
 } from "@/features/assistant/types";
@@ -22,6 +23,7 @@ export class AssistantDatabase extends Dexie {
   settings!: Table<PersonalitySetting, "personality">;
   tombstones!: Table<SessionTombstone, string>;
   turns!: Table<ConversationTurn, string>;
+  mediaHistory!: Table<MediaHistoryRepresentation, string>;
 
   constructor(name = ASSISTANT_DATABASE_NAME) {
     super(name);
@@ -34,6 +36,8 @@ export class AssistantDatabase extends Dexie {
       tombstones: "&sessionId, epoch",
       turns:
         "&id, sessionId, submissionId, [sessionId+status], [sessionId+promptCreatedAt]",
+      mediaHistory:
+        "&id, sessionId, turnId, messageId, createdAt, [sessionId+createdAt], [turnId+createdAt]",
     });
   }
 }

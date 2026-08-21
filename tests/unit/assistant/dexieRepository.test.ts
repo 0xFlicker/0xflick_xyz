@@ -15,6 +15,7 @@ describe("DexieAssistantRepository", () => {
     const database = new AssistantDatabase("schema-inspection");
     expect(database.tables.map((table) => table.name).sort()).toEqual([
       "contexts",
+      "mediaHistory",
       "messages",
       "meta",
       "sessions",
@@ -154,6 +155,41 @@ describe("DexieAssistantRepository", () => {
     });
     await Promise.resolve();
     expect(persist).toHaveBeenCalledTimes(1);
+    repository.destroy();
+  });
+
+  it("persists bounded media history and deletes it with its session", async () => {
+    const repository = new DexieAssistantRepository();
+    await repository.initialize();
+    const accepted = await repository.acceptPrompt({
+      at: 1,
+      sessionId: null,
+      submissionId: toSubmissionId("media-history"),
+      text: "",
+      media: {
+        kinds: ["image"],
+        ownerWindowId: "owner",
+        representations: [
+          {
+            kind: "image",
+            thumbnail: new Blob(["thumbnail"]),
+            label: "diagram.png",
+            accessibleLabel: "Image: diagram.png",
+            mimeType: "image/png",
+            byteLength: 10,
+            width: 100,
+            height: 80,
+            durationSeconds: null,
+            createdAt: 1,
+          },
+        ],
+      },
+    });
+    const snapshot = await repository.getConversation(accepted.sessionId);
+    expect(snapshot?.mediaRepresentations).toHaveLength(1);
+    expect(snapshot?.messages[0].mediaRepresentationIds).toHaveLength(1);
+    await expect(repository.deleteSession(accepted.sessionId, 2)).resolves.toEqual({ ok: true });
+    expect((await repository.getSessions()).sessions).toHaveLength(0);
     repository.destroy();
   });
 
