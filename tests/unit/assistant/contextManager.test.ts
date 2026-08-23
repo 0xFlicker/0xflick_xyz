@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   evaluateContext,
-  partitionCompletedTurns,
+  completedConversationTurns,
   projectedContext,
 } from "@/features/assistant/context/contextManager";
 import type { ConversationTurn } from "@/features/assistant/types";
@@ -30,6 +30,9 @@ function turn(index: number, status: ConversationTurn["status"] = "completed"): 
     completedAt: index,
     interruptionReason: null,
     failureCode: null,
+    modelKey: "browser-prompt-api",
+    modelRevision: 0,
+    modelRuntimeIdentity: "browser-prompt-api:native:prompt-api:default:1",
   };
 }
 
@@ -61,13 +64,10 @@ describe("context policy", () => {
     });
   });
 
-  it("summarizes only older completed turns and retains the most recent four directly", () => {
+  it("returns completed turns in stable order without a fixed recent-turn cutoff", () => {
     const turns = [turn(1), turn(2), turn(3, "interrupted"), turn(4), turn(5), turn(6)];
-    const partition = partitionCompletedTurns(turns);
-    expect(partition.summaryTurns.map((item) => item.id)).toEqual([
+    expect(completedConversationTurns(turns).map((item) => item.id)).toEqual([
       toTurnId("turn-1"),
-    ]);
-    expect(partition.directTurns.map((item) => item.id)).toEqual([
       toTurnId("turn-2"),
       toTurnId("turn-4"),
       toTurnId("turn-5"),

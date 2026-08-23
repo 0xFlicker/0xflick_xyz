@@ -8,10 +8,14 @@ import { toSubmissionId } from "@/features/assistant/types";
 function delegate(memory: MemoryAssistantRepository): AssistantRepository {
   return {
     acceptPrompt: memory.acceptPrompt.bind(memory),
+    activateModelRequest: memory.activateModelRequest.bind(memory),
+    activateReopenFallback: memory.activateReopenFallback.bind(memory),
+    cancelModelRequest: memory.cancelModelRequest.bind(memory),
     checkpointResponse: memory.checkpointResponse.bind(memory),
     claimNextTurn: memory.claimNextTurn.bind(memory),
     clearAll: memory.clearAll.bind(memory),
     commitContext: memory.commitContext.bind(memory),
+    confirmModelRequest: memory.confirmModelRequest.bind(memory),
     deleteSession: memory.deleteSession.bind(memory),
     destroy: memory.destroy.bind(memory),
     finishTurn: memory.finishTurn.bind(memory),
@@ -20,11 +24,14 @@ function delegate(memory: MemoryAssistantRepository): AssistantRepository {
     getSettings: memory.getSettings.bind(memory),
     initialize: memory.initialize.bind(memory),
     mode: () => "durable",
+    markModelRemoved: memory.markModelRemoved.bind(memory),
+    recoverTurn: memory.recoverTurn.bind(memory),
     savePersonality: memory.savePersonality.bind(memory),
     selectSession: memory.selectSession.bind(memory),
     subscribeConversation: memory.subscribeConversation.bind(memory),
     subscribeSessions: memory.subscribeSessions.bind(memory),
     subscribeSettings: memory.subscribeSettings.bind(memory),
+    updateModelRequest: memory.updateModelRequest.bind(memory),
   };
 }
 

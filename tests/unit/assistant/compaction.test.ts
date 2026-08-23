@@ -58,10 +58,10 @@ describe("compactConversation", () => {
     expect((await repository.getConversation(conversation.session.id))?.context?.summaryText).toBe(
       "Fact 0 remains important.",
     );
-    expect(lifecycle.created).toBe(2);
+    expect(lifecycle.created).toBe(3);
     expect(result.ok ? result.session : null).not.toBeNull();
     if (result.ok) result.session.destroy();
-    expect(lifecycle.destroyed).toBe(2);
+    expect(lifecycle.destroyed).toBe(3);
   });
 
   it("keeps the prior context and cleans up when the summary is empty", async () => {
@@ -131,6 +131,8 @@ describe("compactConversation", () => {
     const fake = createFakeModelAdapter({ chunks: ["Candidate facts"] });
     let creates = 0;
     const adapter = {
+      descriptor: fake.adapter.descriptor,
+      runtimeIdentity: fake.adapter.runtimeIdentity,
       availability: fake.adapter.availability,
       create: async (...input: Parameters<typeof fake.adapter.create>) => {
         creates += 1;

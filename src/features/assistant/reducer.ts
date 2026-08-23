@@ -1,24 +1,37 @@
 import type {
   AssistantState,
-  ModelAvailability,
+  LocalModelOption,
   ModelErrorCode,
+  ModelKey,
   RepositoryErrorCode,
   TurnId,
 } from "@/features/assistant/types";
 
 export const initialAssistantState: AssistantState = {
-  environment: { status: "checking" },
+  models: {
+    status: "checking",
+    options: [],
+    selectedModelKey: null,
+    activeModelKey: null,
+    pendingModelKey: null,
+  },
   storage: { status: "initializing" },
   work: { status: "idle" },
 };
 
 export type AssistantAction =
-  | { type: "environment/checking" }
-  | { type: "environment/availability"; availability: ModelAvailability }
-  | { type: "environment/progress"; fraction: number | null }
-  | { type: "environment/preparing" }
-  | { type: "environment/ready" }
-  | { type: "environment/failed"; code: ModelErrorCode }
+  | { type: "models/checking" }
+  | {
+      type: "models/discovered";
+      options: LocalModelOption[];
+      selectedModelKey: ModelKey | null;
+      activeModelKey: ModelKey | null;
+      pendingModelKey: ModelKey | null;
+    }
+  | { type: "models/select"; modelKey: ModelKey }
+  | { type: "models/activate"; modelKey: ModelKey }
+  | { type: "models/pending"; modelKey: ModelKey | null }
+  | { type: "models/failed"; code: ModelErrorCode }
   | { type: "storage/durable" }
   | { type: "storage/temporary"; reason: RepositoryErrorCode }
   | { type: "storage/deletion-unverified" }
@@ -31,45 +44,55 @@ export type AssistantAction =
   | { type: "work/stopped" }
   | { type: "work/failed"; code: ModelErrorCode };
 
-function availabilityState(availability: ModelAvailability): AssistantState["environment"] {
-  switch (availability.state) {
-    case "available":
-      return { status: "ready" };
-    case "downloadable":
-      return { status: "downloadable" };
-    case "downloading":
-      return { status: "downloading", fraction: null };
-    case "unavailable":
-      return { status: "unavailable" };
-  }
-}
-
 export function assistantReducer(
   state: AssistantState,
   action: AssistantAction,
 ): AssistantState {
   switch (action.type) {
-    case "environment/checking":
-      return { ...state, environment: { status: "checking" } };
-    case "environment/availability":
-      return { ...state, environment: availabilityState(action.availability) };
-    case "environment/progress":
+    case "models/checking":
+      return { ...state, models: { ...state.models, status: "checking" } };
+    case "models/discovered":
       return {
         ...state,
-        environment: {
-          status: "downloading",
-          fraction:
-            action.fraction !== null && action.fraction > 0
-              ? action.fraction
-              : null,
+        models: {
+          status: action.options.length > 0 ? "ready" : "unavailable",
+          options: action.options,
+          selectedModelKey: action.selectedModelKey,
+          activeModelKey: action.activeModelKey,
+          pendingModelKey: action.pendingModelKey,
         },
       };
-    case "environment/preparing":
-      return { ...state, environment: { status: "preparing" } };
-    case "environment/ready":
-      return { ...state, environment: { status: "ready" } };
-    case "environment/failed":
-      return { ...state, environment: { status: "failed", code: action.code } };
+    case "models/select":
+      return { ...state, models: { ...state.models, selectedModelKey: action.modelKey } };
+    case "models/activate":
+      return {
+        ...state,
+        models: {
+          ...state.models,
+          activeModelKey: action.modelKey,
+          selectedModelKey: action.modelKey,
+          pendingModelKey: null,
+          options: state.models.options.map((option) => ({
+            ...option,
+            active: option.descriptor.key === action.modelKey,
+            pending: false,
+          })),
+        },
+      };
+    case "models/pending":
+      return {
+        ...state,
+        models: {
+          ...state.models,
+          pendingModelKey: action.modelKey,
+          options: state.models.options.map((option) => ({
+            ...option,
+            pending: option.descriptor.key === action.modelKey,
+          })),
+        },
+      };
+    case "models/failed":
+      return { ...state, models: { ...state.models, status: "failed", code: action.code } };
     case "storage/durable":
       return { ...state, storage: { status: "durable" } };
     case "storage/temporary":

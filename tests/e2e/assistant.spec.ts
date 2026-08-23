@@ -51,7 +51,7 @@ test("ready local model completes a direct-route turn without prompt egress", as
   await page.getByLabel("Message the local assistant").fill(prompt);
   await page.getByRole("button", { name: "Send message" }).click();
 
-  await expect(page.getByText("A private local response.")).toBeVisible();
+  await expect(page.getByText("A private local response.", { exact: true })).toBeVisible();
   await expect(page.getByText("Context used")).toBeVisible();
   await expect(page.getByText(/generated locally on this device/i)).toBeVisible();
   expect(leakedRequests).toEqual([]);

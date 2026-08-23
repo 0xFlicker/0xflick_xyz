@@ -161,7 +161,7 @@ describe("BrowserLanguageModelAdapter", () => {
     ["NotSupportedError", "unsupported_input"],
     ["NetworkError", "download_failed"],
     ["NotReadableError", "output_filtered"],
-    ["QuotaExceededError", "context_too_large"],
+    ["QuotaExceededError", "storage_quota"],
     ["AbortError", "aborted"],
     ["OperationError", "operation_failed"],
     ["UnknownError", "api_changed"],

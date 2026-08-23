@@ -4,6 +4,7 @@ import type {
   MediaPart,
   ModelPrompt,
   PersonalitySetting,
+  TurnId,
 } from "@/features/assistant/types";
 
 export const FIXED_ASSISTANT_GUIDANCE =
@@ -12,6 +13,8 @@ export const FIXED_ASSISTANT_GUIDANCE =
 export interface ReconstructionInput {
   conversation: ConversationSnapshot | null;
   personality: PersonalitySetting;
+  summaryOverride?: string | null;
+  turnIds?: readonly TurnId[];
 }
 
 function personalityPrompt(text: string): ModelPrompt {
@@ -31,6 +34,8 @@ function summaryPrompt(text: string): ModelPrompt {
 export function buildReconstructionPrompts({
   conversation,
   personality,
+  summaryOverride,
+  turnIds,
 }: ReconstructionInput): ModelPrompt[] {
   const prompts: ModelPrompt[] = [
     { role: "system", content: FIXED_ASSISTANT_GUIDANCE },
@@ -39,14 +44,21 @@ export function buildReconstructionPrompts({
   if (personality.text.length > 0) prompts.push(personalityPrompt(personality.text));
 
   const context = conversation?.context;
-  const hasValidSummary = Boolean(
-    conversation &&
-    context?.summaryText &&
-    context.promptVersion === PROMPT_VERSION &&
-    context.sourceHistoryRevision <= conversation.session.historyRevision
+  const validContext = Boolean(
+    context &&
+      conversation &&
+      context.promptVersion === PROMPT_VERSION &&
+      context.sourceHistoryRevision <= conversation.session.historyRevision &&
+      context.modelKey === conversation.session.activeModelKey &&
+      context.modelRevision === conversation.session.activeModelRevision,
   );
-  if (hasValidSummary && context?.summaryText) {
-    prompts.push(summaryPrompt(context.summaryText));
+  const storedSummary = Boolean(
+    context?.summaryText && validContext,
+  ) ? context?.summaryText ?? null : null;
+  const selectedSummary = summaryOverride === undefined ? storedSummary : summaryOverride;
+  const hasValidSummary = Boolean(selectedSummary);
+  if (selectedSummary) {
+    prompts.push(summaryPrompt(selectedSummary));
   }
 
   if (!conversation) return prompts;
@@ -55,31 +67,39 @@ export function buildReconstructionPrompts({
     conversation.messages.map((message) => [message.id, message] as const),
   );
   const completedTurns = [...conversation.turns]
-    .filter((turn) => turn.status === "completed")
+    .filter(
+      (turn) =>
+        turn.status === "completed" &&
+        (turnIds === undefined || turnIds.includes(turn.id)),
+    )
     .sort(
       (left, right) =>
         left.promptCreatedAt - right.promptCreatedAt || left.id.localeCompare(right.id),
     );
 
-  const directStart = hasValidSummary
-    ? completedTurns.findIndex((turn) => turn.id === context?.directFromTurnId)
-    : 0;
-  const directTurns = directStart >= 0 ? completedTurns.slice(directStart) : completedTurns;
+  let directTurns = completedTurns;
+  if (turnIds === undefined && validContext && context?.state === "compacted") {
+    if (context.directFromTurnId) {
+      const directStart = completedTurns.findIndex(
+        (turn) => turn.id === context.directFromTurnId,
+      );
+      directTurns = directStart >= 0 ? completedTurns.slice(directStart) : completedTurns;
+    } else {
+      directTurns = [];
+    }
+  } else if (turnIds === undefined && hasValidSummary && context?.directFromTurnId) {
+    const directStart = completedTurns.findIndex(
+      (turn) => turn.id === context.directFromTurnId,
+    );
+    directTurns = directStart >= 0 ? completedTurns.slice(directStart) : completedTurns;
+  }
 
   for (const turn of directTurns) {
     const user = messages.get(turn.userMessageId);
     const assistant = messages.get(turn.assistantMessageId);
     if (!user || !assistant || assistant.status !== "completed") continue;
 
-    const historyLabels = (user.mediaRepresentationIds ?? [])
-      .map((id) => conversation.mediaRepresentations?.find((item) => item.id === id))
-      .filter((representation) => representation !== undefined)
-      .map(
-        (representation) =>
-          `[Attached ${representation.kind}: ${representation.accessibleLabel}]`,
-      );
-    const replayText = [...historyLabels, user.text].filter(Boolean).join("\n");
-    prompts.push({ role: "user", content: replayText });
+    prompts.push({ role: "user", content: user.text });
     prompts.push({ role: "assistant", content: assistant.text });
   }
 

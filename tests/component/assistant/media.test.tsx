@@ -16,7 +16,7 @@ describe("Assistant media input", () => {
     );
 
     const input = await screen.findByLabelText("Message the local assistant");
-    const imageInput = screen.getByLabelText("Choose media attachments");
+    const imageInput = await screen.findByLabelText("Choose media attachments");
     expect(imageInput).toHaveAttribute("accept", "image/*");
     const file = new File([new Uint8Array([1, 2, 3])], "diagram.png", { type: "image/png" });
     await user.upload(imageInput, file);

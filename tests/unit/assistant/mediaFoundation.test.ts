@@ -75,8 +75,9 @@ describe("media foundation", () => {
     ).not.toBeNull();
   });
 
-  it("reconstructs only text and accessible attachment labels", () => {
+  it("reconstructs only text without any persisted attachment representation", () => {
     const conversation = {
+      boundaries: [],
       context: null,
       messages: [
         {
@@ -128,6 +129,12 @@ describe("media foundation", () => {
         createdAt: 1,
         updatedAt: 1,
         historyRevision: 1,
+        activeModelKey: "browser-prompt-api" as const,
+        activeModelRevision: 0,
+        modelRequestRevision: 0,
+        pendingModelRequest: null,
+        requiresExplicitReplacement: false,
+        modelUnavailableReason: "none" as const,
       },
       turns: [
         {
@@ -144,6 +151,9 @@ describe("media foundation", () => {
           completedAt: 1,
           interruptionReason: null,
           failureCode: null,
+          modelKey: "browser-prompt-api" as const,
+          modelRevision: 0,
+          modelRuntimeIdentity: "browser-prompt-api:native:prompt-api:default:1",
         },
       ],
     };
@@ -152,7 +162,8 @@ describe("media foundation", () => {
       personality: { key: "personality", text: "", revision: 0, updatedAt: 0 },
     });
     const serialized = JSON.stringify(prompts);
-    expect(serialized).toContain("Image: sample.png");
+    expect(serialized).not.toContain("Image: sample.png");
+    expect(serialized).not.toContain("sample.png");
     expect(serialized).not.toContain("raw-thumbnail");
   });
 });

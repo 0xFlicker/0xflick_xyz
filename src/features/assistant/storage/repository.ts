@@ -1,22 +1,30 @@
 import type {
   AcceptPromptInput,
   AcceptedTurn,
+  ActivateModelRequestInput,
+  ActivateReopenFallbackInput,
   AssistantSession,
   ClaimTurnInput,
   ClaimedTurn,
+  ConfirmModelRequestInput,
+  ConfirmModelRequestResult,
   ContextCompareAndSwap,
   ConversationSnapshot,
   FinishTurnInput,
   MutationResult,
+  ModelKey,
   MediaHistoryRepresentation,
   PersonalitySetting,
   RepositoryMode,
   RepositoryErrorCode,
   RepositorySnapshot,
+  RecoverTurnInput,
   ResponseCheckpoint,
+  CancelModelRequestInput,
   SessionId,
   SessionListSnapshot,
   SettingsSnapshot,
+  UpdateModelRequestInput,
 } from "@/features/assistant/types";
 
 export type Unsubscribe = () => void;
@@ -24,9 +32,13 @@ export type RepositoryFailureListener = (code: RepositoryErrorCode) => void;
 
 export interface AssistantRepository {
   acceptPrompt(input: AcceptPromptInput): Promise<AcceptedTurn>;
+  activateModelRequest(input: ActivateModelRequestInput): Promise<MutationResult>;
+  activateReopenFallback(input: ActivateReopenFallbackInput): Promise<MutationResult>;
+  cancelModelRequest(input: CancelModelRequestInput): Promise<MutationResult>;
   claimNextTurn(input: ClaimTurnInput): Promise<ClaimedTurn | null>;
   clearAll(at: number): Promise<MutationResult>;
   commitContext(input: ContextCompareAndSwap): Promise<MutationResult>;
+  confirmModelRequest(input: ConfirmModelRequestInput): Promise<ConfirmModelRequestResult>;
   deleteSession(sessionId: SessionId, at: number): Promise<MutationResult>;
   destroy(): void;
   finishTurn(input: FinishTurnInput): Promise<MutationResult>;
@@ -34,9 +46,10 @@ export interface AssistantRepository {
   getSessions(): Promise<SessionListSnapshot>;
   getSettings(): Promise<SettingsSnapshot>;
   initialize(): Promise<RepositorySnapshot>;
+  markModelRemoved(modelKey: ModelKey, at: number): Promise<MutationResult>;
   mode(): RepositoryMode;
-  markUnownedMediaTurns?(at: number): Promise<void>;
   checkpointResponse(input: ResponseCheckpoint): Promise<MutationResult>;
+  recoverTurn(input: RecoverTurnInput): Promise<MutationResult>;
   savePersonality(text: string, at: number): Promise<MutationResult>;
   selectSession(sessionId: SessionId | null, at: number): Promise<MutationResult>;
   subscribeConversation(
@@ -52,6 +65,7 @@ export interface AssistantRepository {
     listener: (value: SettingsSnapshot) => void,
     onError?: RepositoryFailureListener,
   ): Unsubscribe;
+  updateModelRequest(input: UpdateModelRequestInput): Promise<MutationResult>;
 }
 
 export function mediaHistoryForConversation(

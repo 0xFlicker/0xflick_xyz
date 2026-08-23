@@ -21,6 +21,10 @@ function context(state: ContextState["state"], usage: number | null): ContextSta
     personalityRevision: 0,
     compactedAt: state === "compacted" ? 100 : null,
     overflowedAt: state === "overflowed" ? 101 : null,
+    modelKey: "browser-prompt-api",
+    modelRevision: 0,
+    generatedByModelKey: state === "compacted" ? "browser-prompt-api" : null,
+    appliesThroughTurnId: state === "compacted" ? toTurnId("turn-2") : null,
   };
 }
 

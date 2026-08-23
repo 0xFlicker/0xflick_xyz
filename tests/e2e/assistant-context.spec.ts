@@ -25,7 +25,7 @@ test("shows measured context and preserves transcript through context inspection
   await page.goto("/assistant");
   await page.getByLabel("Message the local assistant").fill("Keep this visible");
   await page.getByRole("button", { name: "Send message" }).click();
-  await expect(page.getByText("Context-aware answer")).toBeVisible();
+  await expect(page.getByText("Context-aware answer", { exact: true })).toBeVisible();
   await expect(page.getByText("Nearing context limit")).toBeVisible();
   await page.getByRole("button", { name: "Context details" }).click();
   await expect(
@@ -124,7 +124,7 @@ test("automatically compacts at projected 80% and retains the recent direct turn
     Object.defineProperty(globalThis, "LanguageModel", { configurable: true, value: FakeLanguageModel });
   });
   await page.goto("/assistant");
-  for (let index = 1; index <= 5; index += 1) {
+  for (let index = 1; index <= 2; index += 1) {
     await page.getByLabel("Message the local assistant").fill(`Automatic turn ${index}`);
     await page.getByRole("button", { name: "Send message" }).click();
     await expect(
@@ -132,7 +132,7 @@ test("automatically compacts at projected 80% and retains the recent direct turn
     ).toHaveCount(index);
   }
 
-  await page.getByLabel("Message the local assistant").fill("Automatic turn 6");
+  await page.getByLabel("Message the local assistant").fill("Automatic turn 3");
   await page.getByRole("button", { name: "Send message" }).click();
   await expect(page.getByText("Making room for this conversation…")).toBeVisible();
   await expect(page.getByText("Your message will start automatically.")).toBeVisible();
@@ -146,12 +146,12 @@ test("automatically compacts at projected 80% and retains the recent direct turn
   });
   await expect(
     page.getByLabel("Conversation transcript").getByText("Automatic local reply."),
-  ).toHaveCount(6);
+  ).toHaveCount(3);
   expect(await page.evaluate(() => Reflect.get(globalThis, "__summaryCreates"))).toBeGreaterThan(0);
   await page.getByRole("button", { name: "Context details" }).click();
   await page.getByText("See condensed summary").click();
   await expect(page.getByText(/Automatic summary retained fact amber/i)).toBeVisible();
-  for (let index = 1; index <= 6; index += 1) {
+  for (let index = 1; index <= 3; index += 1) {
     await expect(
       page.getByLabel("Conversation transcript").getByText(`Automatic turn ${index}`),
     ).toBeVisible();

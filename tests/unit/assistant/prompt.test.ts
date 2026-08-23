@@ -35,6 +35,9 @@ function conversation(): ConversationSnapshot {
       completedAt: 3,
       interruptionReason: null,
       failureCode: null,
+      modelKey: "browser-prompt-api",
+      modelRevision: 0,
+      modelRuntimeIdentity: "browser-prompt-api:native:prompt-api:default:1",
     },
     {
       id: toTurnId("turn-stopped"),
@@ -50,6 +53,9 @@ function conversation(): ConversationSnapshot {
       completedAt: 6,
       interruptionReason: "visitor",
       failureCode: null,
+      modelKey: "browser-prompt-api",
+      modelRevision: 0,
+      modelRuntimeIdentity: "browser-prompt-api:native:prompt-api:default:1",
     },
   ];
   const messages: Message[] = [
@@ -96,6 +102,7 @@ function conversation(): ConversationSnapshot {
   ];
 
   return {
+    boundaries: [],
     context: null,
     messages,
     session: {
@@ -106,6 +113,12 @@ function conversation(): ConversationSnapshot {
       createdAt: 1,
       updatedAt: 6,
       historyRevision: 2,
+      activeModelKey: "browser-prompt-api",
+      activeModelRevision: 0,
+      modelRequestRevision: 0,
+      pendingModelRequest: null,
+      requiresExplicitReplacement: false,
+      modelUnavailableReason: "none",
     },
     turns,
   };

@@ -14,23 +14,32 @@ import { titleFromPrompt } from "@/features/assistant/storage/memoryRepository";
 import type {
   AcceptPromptInput,
   AcceptedTurn,
+  ActivateModelRequestInput,
+  ActivateReopenFallbackInput,
   AppMeta,
   AssistantSession,
   ClaimTurnInput,
   ClaimedTurn,
+  ConfirmModelRequestInput,
+  ConfirmModelRequestResult,
   ContextCompareAndSwap,
   ConversationSnapshot,
   ConversationTurn,
   FinishTurnInput,
   MediaHistoryRepresentation,
   Message,
+  ModelBoundary,
+  ModelKey,
   MutationResult,
   RepositoryErrorCode,
   RepositorySnapshot,
+  RecoverTurnInput,
   ResponseCheckpoint,
   SessionId,
   SessionListSnapshot,
   SettingsSnapshot,
+  CancelModelRequestInput,
+  UpdateModelRequestInput,
 } from "@/features/assistant/types";
 import { toMediaHistoryId, toMessageId, toSessionId, toTurnId } from "@/features/assistant/types";
 
@@ -73,39 +82,6 @@ export class DexieAssistantRepository implements AssistantRepository {
 
   mode(): "durable" {
     return "durable";
-  }
-
-  async markUnownedMediaTurns(at: number): Promise<void> {
-    await this.database.transaction(
-      "rw",
-      [this.database.sessions, this.database.turns, this.database.messages],
-      async () => {
-        const queued = (await this.database.turns.toArray()).filter(
-          (turn) => turn.status === "queued" && (turn.mediaRepresentationIds ?? []).length > 0,
-        );
-        for (const turn of queued) {
-          await this.database.turns.update(turn.id, {
-            status: "interrupted",
-            completedAt: at,
-            interruptionReason: "owner_closed",
-            mediaState: "requires_reattach",
-            mediaOwnerWindowId: null,
-          });
-          await this.database.messages.update(turn.assistantMessageId, {
-            status: "interrupted",
-            updatedAt: at,
-          });
-          const session = await this.database.sessions.get(turn.sessionId);
-          if (session) {
-            await this.database.sessions.put({
-              ...session,
-              historyRevision: session.historyRevision + 1,
-              updatedAt: at,
-            });
-          }
-        }
-      },
-    );
   }
 
   async initialize(): Promise<RepositorySnapshot> {
@@ -157,11 +133,15 @@ export class DexieAssistantRepository implements AssistantRepository {
   async getConversation(sessionId: SessionId): Promise<ConversationSnapshot | null> {
     const session = await this.database.sessions.get(sessionId);
     if (!session) return null;
-    const [turns, messages, context, mediaRepresentations] = await Promise.all([
+    const [turns, messages, context, mediaRepresentations, boundaries] = await Promise.all([
       this.database.turns.where("sessionId").equals(sessionId).toArray(),
       this.database.messages.where("sessionId").equals(sessionId).toArray(),
       this.database.contexts.get(sessionId),
       this.database.mediaHistory.where("sessionId").equals(sessionId).toArray(),
+      this.database.modelBoundaries
+        .where("sessionId")
+        .equals(sessionId)
+        .sortBy("selectionRevision"),
     ]);
     turns.sort(
       (left, right) =>
@@ -176,6 +156,7 @@ export class DexieAssistantRepository implements AssistantRepository {
       if (assistant) ordered.push(assistant);
     }
     return {
+      boundaries,
       context: context ?? null,
       messages: ordered,
       mediaRepresentations,
@@ -240,6 +221,268 @@ export class DexieAssistantRepository implements AssistantRepository {
     }
   }
 
+  async confirmModelRequest(
+    input: ConfirmModelRequestInput,
+  ): Promise<ConfirmModelRequestResult> {
+    try {
+      return await this.database.transaction(
+        "rw",
+        this.database.sessions,
+        this.database.turns,
+        this.database.tombstones,
+        async () => {
+          const session = await this.database.sessions.get(input.sessionId);
+          if (!session || (await this.database.tombstones.get(input.sessionId))) {
+            return { ok: false, code: "session_deleted" };
+          }
+          if (await this.hasNonterminalTurn(input.sessionId)) {
+            return { ok: false, code: "chat_busy" };
+          }
+          if (
+            session.activeModelKey === input.targetModelKey &&
+            !session.requiresExplicitReplacement &&
+            session.modelUnavailableReason === "none"
+          ) {
+            return { ok: true, request: null };
+          }
+          const revision = session.modelRequestRevision + 1;
+          const request = {
+            requestId: input.requestId,
+            revision,
+            targetModelKey: input.targetModelKey,
+            sourceModelKey: session.activeModelKey,
+            ownerWindowId: input.ownerWindowId,
+            reason: input.reason,
+            status: "preparing" as const,
+            capturedEpoch: session.epoch,
+            capturedHistoryRevision: session.historyRevision,
+            confirmedAt: input.at,
+          };
+          await this.database.sessions.put({
+            ...session,
+            modelRequestRevision: revision,
+            pendingModelRequest: request,
+            updatedAt: input.at,
+          });
+          return { ok: true, request };
+        },
+      );
+    } catch (error) {
+      const failure = this.mutationFailure(error);
+      return failure.ok ? { ok: false, code: "storage_write_failed" } : failure;
+    }
+  }
+
+  async updateModelRequest(input: UpdateModelRequestInput): Promise<MutationResult> {
+    try {
+      return await this.database.transaction("rw", this.database.sessions, async () => {
+        const session = await this.database.sessions.get(input.sessionId);
+        if (!session) return { ok: false, code: "session_deleted" };
+        const request = session.pendingModelRequest;
+        if (
+          !request ||
+          request.requestId !== input.requestId ||
+          request.revision !== input.revision ||
+          session.modelRequestRevision !== input.revision
+        ) {
+          return { ok: false, code: "model_request_stale" };
+        }
+        await this.database.sessions.put({
+          ...session,
+          pendingModelRequest: { ...request, status: input.status },
+        });
+        return { ok: true };
+      });
+    } catch (error) {
+      return this.mutationFailure(error);
+    }
+  }
+
+  async cancelModelRequest(input: CancelModelRequestInput): Promise<MutationResult> {
+    try {
+      return await this.database.transaction("rw", this.database.sessions, async () => {
+        const session = await this.database.sessions.get(input.sessionId);
+        if (!session) return { ok: false, code: "session_deleted" };
+        const request = session.pendingModelRequest;
+        if (
+          !request ||
+          request.requestId !== input.requestId ||
+          request.revision !== input.revision ||
+          session.modelRequestRevision !== input.revision
+        ) {
+          return { ok: false, code: "model_request_stale" };
+        }
+        await this.database.sessions.put({ ...session, pendingModelRequest: null });
+        return { ok: true };
+      });
+    } catch (error) {
+      return this.mutationFailure(error);
+    }
+  }
+
+  async activateModelRequest(input: ActivateModelRequestInput): Promise<MutationResult> {
+    try {
+      return await this.database.transaction(
+        "rw",
+        [
+          this.database.meta,
+          this.database.sessions,
+          this.database.turns,
+          this.database.contexts,
+          this.database.modelBoundaries,
+          this.database.tombstones,
+        ],
+        async () => {
+          const meta = (await this.database.meta.get("app")) ?? appMeta();
+          if (meta.datasetEpoch !== input.expectedEpoch) {
+            return { ok: false, code: "dataset_cleared" };
+          }
+          const session = await this.database.sessions.get(input.sessionId);
+          if (!session || (await this.database.tombstones.get(input.sessionId))) {
+            return { ok: false, code: "session_deleted" };
+          }
+          const request = session.pendingModelRequest;
+          if (
+            !request ||
+            request.requestId !== input.requestId ||
+            request.revision !== input.revision ||
+            request.ownerWindowId !== input.ownerWindowId ||
+            request.targetModelKey !== input.descriptor.key ||
+            session.modelRequestRevision !== input.revision
+          ) {
+            return { ok: false, code: "model_request_stale" };
+          }
+          if (
+            session.epoch !== input.expectedEpoch ||
+            session.historyRevision !== input.expectedHistoryRevision ||
+            request.capturedEpoch !== input.expectedEpoch ||
+            request.capturedHistoryRevision !== input.expectedHistoryRevision
+          ) {
+            return { ok: false, code: "revision_conflict" };
+          }
+          if (await this.hasNonterminalTurn(input.sessionId)) {
+            return { ok: false, code: "chat_busy" };
+          }
+          const boundary: ModelBoundary = {
+            id: input.requestId,
+            sessionId: input.sessionId,
+            selectionRevision: input.revision,
+            fromModelKey: session.activeModelKey,
+            toModelKey: input.descriptor.key,
+            toDisplayName: input.descriptor.displayName,
+            toExecutionName: input.descriptor.executionName,
+            reason: request.reason,
+            confirmation: "visitor",
+            afterTurnId: await this.latestTerminalTurnId(input.sessionId),
+            createdAt: input.at,
+          };
+          if (await this.database.modelBoundaries.get(boundary.id)) {
+            return { ok: false, code: "model_request_stale" };
+          }
+          if (input.context) await this.database.contexts.put(input.context);
+          else await this.database.contexts.delete(input.sessionId);
+          await this.database.modelBoundaries.add(boundary);
+          await this.database.sessions.put({
+            ...session,
+            activeModelKey: input.descriptor.key,
+            activeModelRevision: input.revision,
+            pendingModelRequest: null,
+            historyRevision: session.historyRevision + 1,
+            requiresExplicitReplacement: false,
+            modelUnavailableReason: "none",
+            updatedAt: input.at,
+          });
+          return { ok: true };
+        },
+      );
+    } catch (error) {
+      return this.mutationFailure(error);
+    }
+  }
+
+  async activateReopenFallback(
+    input: ActivateReopenFallbackInput,
+  ): Promise<MutationResult> {
+    try {
+      return await this.database.transaction(
+        "rw",
+        [
+          this.database.sessions,
+          this.database.turns,
+          this.database.contexts,
+          this.database.modelBoundaries,
+        ],
+        async () => {
+          const session = await this.database.sessions.get(input.sessionId);
+          if (!session) return { ok: false, code: "session_deleted" };
+          if (session.requiresExplicitReplacement) {
+            return { ok: false, code: "model_not_ready" };
+          }
+          if (
+            session.activeModelKey !== input.expectedActiveModelKey ||
+            session.activeModelRevision !== input.expectedActiveRevision ||
+            session.pendingModelRequest
+          ) {
+            return { ok: false, code: "revision_conflict" };
+          }
+          if (await this.hasNonterminalTurn(input.sessionId)) {
+            return { ok: false, code: "chat_busy" };
+          }
+          const revision = session.modelRequestRevision + 1;
+          const id = `reopen:${session.id}:${revision}`;
+          await this.database.modelBoundaries.add({
+            id,
+            sessionId: session.id,
+            selectionRevision: revision,
+            fromModelKey: session.activeModelKey,
+            toModelKey: input.descriptor.key,
+            toDisplayName: input.descriptor.displayName,
+            toExecutionName: input.descriptor.executionName,
+            reason: "reopen_fallback",
+            confirmation: "automatic_reopen",
+            afterTurnId: await this.latestTerminalTurnId(input.sessionId),
+            createdAt: input.at,
+          });
+          await this.database.contexts.delete(session.id);
+          await this.database.sessions.put({
+            ...session,
+            activeModelKey: input.descriptor.key,
+            activeModelRevision: revision,
+            modelRequestRevision: revision,
+            historyRevision: session.historyRevision + 1,
+            modelUnavailableReason: "none",
+            updatedAt: input.at,
+          });
+          return { ok: true };
+        },
+      );
+    } catch (error) {
+      return this.mutationFailure(error);
+    }
+  }
+
+  async markModelRemoved(modelKey: ModelKey, at: number): Promise<MutationResult> {
+    try {
+      await this.database.transaction("rw", this.database.sessions, async () => {
+        const sessions = (await this.database.sessions.toArray()).filter(
+          (session) => session.activeModelKey === modelKey,
+        );
+        await this.database.sessions.bulkPut(
+          sessions.map((session) => ({
+            ...session,
+            pendingModelRequest: null,
+            requiresExplicitReplacement: true,
+            modelUnavailableReason: "removed" as const,
+            updatedAt: at,
+          })),
+        );
+      });
+      return { ok: true };
+    } catch (error) {
+      return this.mutationFailure(error);
+    }
+  }
+
   async acceptPrompt(input: AcceptPromptInput): Promise<AcceptedTurn> {
     const text = input.text.trim();
     if (!text && !input.media?.representations.length) {
@@ -285,6 +528,20 @@ export class DexieAssistantRepository implements AssistantRepository {
         if (input.sessionId && (await this.database.tombstones.get(input.sessionId))) {
           throw new RepositoryMutationError("session_deleted");
         }
+        if (session?.pendingModelRequest) {
+          throw new RepositoryMutationError("model_change_in_progress");
+        }
+        if (session && (session.requiresExplicitReplacement || session.modelUnavailableReason !== "none")) {
+          throw new RepositoryMutationError("model_not_ready");
+        }
+        if (
+          session &&
+          input.model &&
+          (input.model.key !== session.activeModelKey ||
+            input.model.revision !== session.activeModelRevision)
+        ) {
+          throw new RepositoryMutationError("revision_conflict");
+        }
 
         const turnId = toTurnId(uuid());
         const sessionId = session?.id ?? toSessionId(uuid());
@@ -300,6 +557,11 @@ export class DexieAssistantRepository implements AssistantRepository {
           messageId: userMessageId,
         }));
         if (!session) {
+          const model = input.model ?? {
+            key: "browser-prompt-api" as const,
+            revision: 0,
+            runtimeIdentity: "browser-prompt-api:native:prompt-api:default:1",
+          };
           session = {
             id: sessionId,
             epoch: meta.datasetEpoch,
@@ -310,10 +572,21 @@ export class DexieAssistantRepository implements AssistantRepository {
             createdAt: input.at,
             updatedAt: input.at,
             historyRevision: 0,
+            activeModelKey: model.key,
+            activeModelRevision: model.revision,
+            modelRequestRevision: model.revision,
+            pendingModelRequest: null,
+            requiresExplicitReplacement: false,
+            modelUnavailableReason: "none",
           };
           await this.database.sessions.add(session);
         }
 
+        const turnModel = input.model ?? {
+          key: session.activeModelKey,
+          revision: session.activeModelRevision,
+          runtimeIdentity: "browser-prompt-api:native:prompt-api:default:1",
+        };
         const turn: ConversationTurn = {
           id: turnId,
           sessionId,
@@ -332,6 +605,9 @@ export class DexieAssistantRepository implements AssistantRepository {
           mediaRepresentationIds: mediaRepresentations.map((representation) => representation.id),
           mediaOwnerWindowId: input.media?.ownerWindowId ?? null,
           mediaState: mediaRepresentations.length > 0 ? "ephemeral" : "none",
+          modelKey: turnModel.key,
+          modelRevision: turnModel.revision,
+          modelRuntimeIdentity: turnModel.runtimeIdentity,
         };
         await this.database.turns.add(turn);
         await this.database.messages.bulkAdd([
@@ -392,22 +668,11 @@ export class DexieAssistantRepository implements AssistantRepository {
         const session = await this.database.sessions.get(input.sessionId);
         if (!session) return null;
 
-        const orphans = await this.database.turns
+        const activeAttempts = await this.database.turns
           .where("[sessionId+status]")
           .equals([input.sessionId, "generating"])
           .toArray();
-        for (const orphan of orphans) {
-          await this.database.turns.update(orphan.id, {
-            completedAt: input.at,
-            interruptionReason: "owner_closed",
-            status: "interrupted",
-          });
-          await this.database.messages.update(orphan.assistantMessageId, {
-            status: "interrupted",
-            updatedAt: input.at,
-          });
-          session.historyRevision += 1;
-        }
+        if (activeAttempts.length > 0) return null;
 
         const queued = await this.database.turns
           .where("[sessionId+status]")
@@ -424,7 +689,6 @@ export class DexieAssistantRepository implements AssistantRepository {
               candidate.mediaOwnerWindowId === input.ownerWindowId),
         );
         if (!turn) {
-          if (orphans.length > 0) await this.database.sessions.put(session);
           return null;
         }
 
@@ -439,7 +703,6 @@ export class DexieAssistantRepository implements AssistantRepository {
         const streaming: Message = { ...message, status: "streaming", updatedAt: input.at };
         await this.database.turns.put(claimedTurn);
         await this.database.messages.put(streaming);
-        if (orphans.length > 0) await this.database.sessions.put(session);
         return {
           attemptId: input.attemptId,
           epoch: input.epoch,
@@ -522,6 +785,59 @@ export class DexieAssistantRepository implements AssistantRepository {
     }
   }
 
+  async recoverTurn(input: RecoverTurnInput): Promise<MutationResult> {
+    try {
+      return await this.database.transaction(
+        "rw",
+        this.database.meta,
+        this.database.sessions,
+        this.database.turns,
+        this.database.messages,
+        async () => {
+          const meta = (await this.database.meta.get("app")) ?? appMeta();
+          if (meta.datasetEpoch !== input.epoch) {
+            return { ok: false, code: "dataset_cleared" };
+          }
+          const session = await this.database.sessions.get(input.sessionId);
+          if (!session) return { ok: false, code: "session_deleted" };
+          const turn = await this.database.turns.get(input.turnId);
+          if (
+            !turn ||
+            turn.sessionId !== input.sessionId ||
+            !["queued", "generating"].includes(turn.status) ||
+            turn.generationAttemptId !== input.expectedAttemptId
+          ) {
+            return { ok: false, code: "revision_conflict" };
+          }
+          const message = await this.database.messages.get(turn.assistantMessageId);
+          if (!message) return { ok: false, code: "revision_conflict" };
+          const hasMedia = (turn.mediaRepresentationIds ?? []).length > 0;
+          await this.database.turns.put({
+            ...turn,
+            completedAt: input.at,
+            interruptionReason: "owner_closed",
+            mediaOwnerWindowId: null,
+            mediaState: hasMedia ? "requires_reattach" : "none",
+            status: "interrupted",
+          });
+          await this.database.messages.put({
+            ...message,
+            status: "interrupted",
+            updatedAt: input.at,
+          });
+          await this.database.sessions.put({
+            ...session,
+            historyRevision: session.historyRevision + 1,
+            updatedAt: input.at,
+          });
+          return { ok: true };
+        },
+      );
+    } catch (error) {
+      return this.mutationFailure(error);
+    }
+  }
+
   async commitContext(input: ContextCompareAndSwap): Promise<MutationResult> {
     try {
       return await this.database.transaction(
@@ -586,6 +902,7 @@ export class DexieAssistantRepository implements AssistantRepository {
           this.database.messages,
           this.database.mediaHistory,
           this.database.contexts,
+          this.database.modelBoundaries,
           this.database.tombstones,
         ],
         async () => {
@@ -608,6 +925,7 @@ export class DexieAssistantRepository implements AssistantRepository {
             .equals(sessionId)
             .delete();
           await this.database.contexts.delete(sessionId);
+          await this.database.modelBoundaries.where("sessionId").equals(sessionId).delete();
           await this.database.sessions.delete(sessionId);
           const meta = (await this.database.meta.get("app")) ?? appMeta(at);
           if (meta.activeSessionId === sessionId) {
@@ -637,6 +955,7 @@ export class DexieAssistantRepository implements AssistantRepository {
           this.database.messages,
           this.database.mediaHistory,
           this.database.contexts,
+          this.database.modelBoundaries,
           this.database.settings,
           this.database.tombstones,
         ],
@@ -648,6 +967,7 @@ export class DexieAssistantRepository implements AssistantRepository {
             this.database.messages.clear(),
             this.database.mediaHistory.clear(),
             this.database.contexts.clear(),
+            this.database.modelBoundaries.clear(),
             this.database.settings.clear(),
             this.database.tombstones.clear(),
           ]);
@@ -691,6 +1011,29 @@ export class DexieAssistantRepository implements AssistantRepository {
     const message = await this.database.messages.get(turn.assistantMessageId);
     if (!message) return { ok: false, result: { ok: false, code: "session_deleted" } };
     return { ok: true, message, turn };
+  }
+
+  private async hasNonterminalTurn(sessionId: SessionId): Promise<boolean> {
+    const turns = await this.database.turns
+      .where("sessionId")
+      .equals(sessionId)
+      .toArray();
+    return turns.some((turn) => turn.status === "queued" || turn.status === "generating");
+  }
+
+  private async latestTerminalTurnId(sessionId: SessionId): Promise<ReturnType<typeof toTurnId> | null> {
+    const turns = await this.database.turns
+      .where("sessionId")
+      .equals(sessionId)
+      .toArray();
+    return turns
+      .filter((turn) => ["completed", "interrupted", "failed"].includes(turn.status))
+      .sort(
+        (left, right) =>
+          (right.completedAt ?? right.promptCreatedAt) -
+            (left.completedAt ?? left.promptCreatedAt) ||
+          right.id.localeCompare(left.id),
+      )[0]?.id ?? null;
   }
 
   private mutationFailure(error: unknown): MutationResult {

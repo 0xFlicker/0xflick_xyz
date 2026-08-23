@@ -153,7 +153,7 @@ describe("Assistant conversation", () => {
     );
     await user.click(screen.getByRole("button", { name: "Send message" }));
 
-    expect(await screen.findByText(/built-in safety checks blocked the output/i)).toBeVisible();
+    expect(await screen.findByText(/local model did not return that response/i)).toBeVisible();
   });
 });
 

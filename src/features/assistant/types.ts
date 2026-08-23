@@ -11,6 +11,15 @@ export type AttemptId = Identifier<"AttemptId">;
 export type SubmissionId = Identifier<"SubmissionId">;
 export type MediaHistoryId = Identifier<"MediaHistoryId">;
 
+export type ModelKey =
+  | "browser-prompt-api"
+  | "smollm2-360m-webgpu"
+  | "smollm2-135m-wasm";
+export type ModelBackend = "prompt-api" | "webgpu" | "wasm";
+export type ModelKind = "native" | "portable";
+export type ModelDtype = "q4" | "default";
+export type ModelRuntimeIdentity = string;
+
 export function toSessionId(value: string): SessionId {
   return value as SessionId;
 }
@@ -53,6 +62,96 @@ export interface AssistantSession {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   historyRevision: number;
+  activeModelKey: ModelKey;
+  activeModelRevision: number;
+  modelRequestRevision: number;
+  pendingModelRequest: PendingModelRequest | null;
+  requiresExplicitReplacement: boolean;
+  modelUnavailableReason: ModelUnavailableReason;
+}
+
+export type ModelUnavailableReason =
+  | "none"
+  | "removed"
+  | "evicted"
+  | "unsupported"
+  | "failed";
+
+export type ModelRequestReason = "visitor" | "recommended";
+export type ModelRequestStatus =
+  | "preparing"
+  | "checking"
+  | "compacting"
+  | "ready_to_commit";
+
+export interface PendingModelRequest {
+  requestId: string;
+  revision: number;
+  targetModelKey: ModelKey;
+  sourceModelKey: ModelKey | null;
+  ownerWindowId: string;
+  reason: ModelRequestReason;
+  status: ModelRequestStatus;
+  capturedEpoch: number;
+  capturedHistoryRevision: number;
+  confirmedAt: Timestamp;
+}
+
+export interface ConfirmModelRequestInput {
+  at: Timestamp;
+  ownerWindowId: string;
+  reason: ModelRequestReason;
+  requestId: string;
+  sessionId: SessionId;
+  targetModelKey: ModelKey;
+}
+
+export type ConfirmModelRequestResult =
+  | { ok: true; request: PendingModelRequest | null }
+  | { ok: false; code: RepositoryErrorCode };
+
+export interface UpdateModelRequestInput {
+  requestId: string;
+  revision: number;
+  sessionId: SessionId;
+  status: ModelRequestStatus;
+}
+
+export interface CancelModelRequestInput {
+  requestId: string;
+  revision: number;
+  sessionId: SessionId;
+}
+
+export interface ActivateModelRequestInput extends CancelModelRequestInput {
+  at: Timestamp;
+  context: ContextState | null;
+  descriptor: LocalModelDescriptor;
+  expectedEpoch: number;
+  expectedHistoryRevision: number;
+  ownerWindowId: string;
+}
+
+export interface ActivateReopenFallbackInput {
+  at: Timestamp;
+  descriptor: LocalModelDescriptor;
+  expectedActiveModelKey: ModelKey;
+  expectedActiveRevision: number;
+  sessionId: SessionId;
+}
+
+export interface ModelBoundary {
+  id: string;
+  sessionId: SessionId;
+  selectionRevision: number;
+  fromModelKey: ModelKey | null;
+  toModelKey: ModelKey;
+  toDisplayName: string;
+  toExecutionName: string;
+  reason: ModelRequestReason | "reopen_fallback";
+  confirmation: "visitor" | "automatic_reopen";
+  afterTurnId: TurnId | null;
+  createdAt: Timestamp;
 }
 
 export type TurnStatus =
@@ -82,7 +181,12 @@ export type ModelErrorCode =
   | "api_changed"
   | "empty_response"
   | "media_unavailable"
-  | "media_rehydration_required";
+  | "media_rehydration_required"
+  | "storage_quota"
+  | "corrupt_assets"
+  | "resource_exhausted"
+  | "runtime_terminated"
+  | "unsupported_device";
 
 export type MediaKind = "image" | "audio";
 export type MediaState = "none" | "ephemeral" | "requires_reattach" | "released";
@@ -148,6 +252,9 @@ export interface ConversationTurn {
   mediaRepresentationIds?: MediaHistoryId[];
   mediaOwnerWindowId?: string | null;
   mediaState?: MediaState;
+  modelKey: ModelKey;
+  modelRevision: number;
+  modelRuntimeIdentity: ModelRuntimeIdentity;
 }
 
 export type MessageRole = "user" | "assistant";
@@ -191,6 +298,10 @@ export interface ContextState {
   personalityRevision: number;
   compactedAt: Timestamp | null;
   overflowedAt: Timestamp | null;
+  modelKey: ModelKey;
+  modelRevision: number;
+  generatedByModelKey: ModelKey | null;
+  appliesThroughTurnId: TurnId | null;
 }
 
 export interface PersonalitySetting {
@@ -213,6 +324,7 @@ export interface SessionListSnapshot {
 }
 
 export interface ConversationSnapshot {
+  boundaries: ModelBoundary[];
   context: ContextState | null;
   messages: Message[];
   session: AssistantSession;
@@ -241,7 +353,11 @@ export type RepositoryErrorCode =
   | "revision_conflict"
   | "storage_unavailable"
   | "storage_write_failed"
-  | "deletion_unverified";
+  | "deletion_unverified"
+  | "chat_busy"
+  | "model_change_in_progress"
+  | "model_request_stale"
+  | "model_not_ready";
 
 export type MutationResult =
   | { ok: true }
@@ -264,6 +380,11 @@ export interface AcceptPromptInput {
   sessionId: SessionId | null;
   submissionId: SubmissionId;
   text: string;
+  model?: {
+    key: ModelKey;
+    revision: number;
+    runtimeIdentity: ModelRuntimeIdentity;
+  };
   media?: {
     kinds: MediaKind[];
     ownerWindowId: string;
@@ -292,6 +413,14 @@ export interface FinishTurnInput extends ResponseCheckpoint {
   failureCode?: ModelErrorCode;
   interruptionReason?: InterruptionReason;
   status: "completed" | "interrupted" | "failed";
+}
+
+export interface RecoverTurnInput {
+  at: Timestamp;
+  epoch: number;
+  expectedAttemptId: AttemptId | null;
+  sessionId: SessionId;
+  turnId: TurnId;
 }
 
 export interface ContextCompareAndSwap {
@@ -331,14 +460,74 @@ export interface ModelFailure {
   code: ModelErrorCode;
 }
 
-export type EnvironmentState =
-  | { status: "checking" }
-  | { status: "unavailable" }
-  | { status: "downloadable" }
-  | { status: "downloading"; fraction: number | null }
-  | { status: "preparing" }
-  | { status: "ready" }
-  | { status: "failed"; code: ModelErrorCode };
+export interface LocalModelCapabilities {
+  text: boolean;
+  image: boolean;
+  audio: boolean;
+}
+
+export interface LocalModelDescriptor {
+  key: ModelKey;
+  displayName: string;
+  executionName: string;
+  rank: number;
+  kind: ModelKind;
+  backend: ModelBackend;
+  capabilities: LocalModelCapabilities;
+  task?: "text-generation";
+  repository?: string;
+  revision?: string;
+  dtype: ModelDtype;
+  approximateWeightBytes?: number;
+  contextLimit: number | "dynamic";
+  promptVersion: number;
+}
+
+export interface ModelAssetFile {
+  path: string;
+  size: number | null;
+  cached: boolean;
+}
+
+export type ModelPreparationState =
+  | "unprepared"
+  | "preparing"
+  | "loading"
+  | "checking"
+  | "ready"
+  | "failed"
+  | "removing"
+  | "missing";
+
+export interface ModelAssetSnapshot {
+  modelKey: ModelKey;
+  compatibility: "offered";
+  state: ModelPreparationState;
+  requiredFiles: ModelAssetFile[];
+  expectedBytes: number | null;
+  loadedBytes: number | null;
+  progress: number | null;
+  loadedRuntimeIdentity: ModelRuntimeIdentity | null;
+  failure: ModelErrorCode | null;
+  observedAt: Timestamp;
+}
+
+export interface LocalModelOption {
+  descriptor: LocalModelDescriptor;
+  asset: ModelAssetSnapshot;
+  active: boolean;
+  pending: boolean;
+}
+
+export type ModelCatalogState = {
+  options: LocalModelOption[];
+  selectedModelKey: ModelKey | null;
+  activeModelKey: ModelKey | null;
+  pendingModelKey: ModelKey | null;
+} & (
+  | { status: "checking" | "ready" | "unavailable" }
+  | { status: "failed"; code: ModelErrorCode }
+);
 
 export type WorkState =
   | { status: "idle" }
@@ -357,7 +546,7 @@ export type StorageState =
   | { status: "deletion_unverified" };
 
 export interface AssistantState {
-  environment: EnvironmentState;
+  models: ModelCatalogState;
   storage: StorageState;
   work: WorkState;
 }

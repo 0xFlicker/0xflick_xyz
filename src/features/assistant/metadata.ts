@@ -1,7 +1,7 @@
 export const assistantBrowserTitle = "Local AI Assistant";
 export const assistantShareTitle = "Think here, on this device.";
 export const assistantDescription =
-  "A focused AI assistant that runs locally in supported Chrome browsers. Chats stay in your browser—no account, cloud inference, tools, or live web access.";
+  "A focused AI assistant that runs locally in your browser when an offered model becomes ready. Chats stay in your browser—no account, cloud inference, tools, or live web access.";
 
 export const assistantSocialImage = {
   url: "/assistant/opengraph-image",

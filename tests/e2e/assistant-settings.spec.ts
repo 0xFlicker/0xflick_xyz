@@ -35,7 +35,7 @@ test("persists a global personality for later turns without changing prior messa
   await page.goto("/assistant");
   await page.getByLabel("Message the local assistant").fill("Original question");
   await page.getByRole("button", { name: "Send message" }).click();
-  await expect(page.getByText("Saved-style answer")).toBeVisible();
+  await expect(page.getByText("Saved-style answer", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Settings" }).click();
   await page.getByLabel("Personality preference").fill("Use crisp numbered answers.");

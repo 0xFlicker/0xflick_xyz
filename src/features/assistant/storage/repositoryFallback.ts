@@ -6,18 +6,26 @@ import type {
 import type {
   AcceptPromptInput,
   AcceptedTurn,
+  ActivateModelRequestInput,
+  ActivateReopenFallbackInput,
+  CancelModelRequestInput,
   ClaimTurnInput,
   ClaimedTurn,
+  ConfirmModelRequestInput,
+  ConfirmModelRequestResult,
   ContextCompareAndSwap,
   ConversationSnapshot,
   FinishTurnInput,
   MutationResult,
+  ModelKey,
   RepositoryMode,
   RepositorySnapshot,
+  RecoverTurnInput,
   ResponseCheckpoint,
   SessionId,
   SessionListSnapshot,
   SettingsSnapshot,
+  UpdateModelRequestInput,
 } from "@/features/assistant/types";
 import { MemoryAssistantRepository } from "@/features/assistant/storage/memoryRepository";
 
@@ -62,10 +70,6 @@ export class ResilientAssistantRepository implements AssistantRepository {
     return this.active.mode();
   }
 
-  async markUnownedMediaTurns(at: number): Promise<void> {
-    await this.active.markUnownedMediaTurns?.(at);
-  }
-
   async initialize(): Promise<RepositorySnapshot> {
     const lifecycleRevision = this.lifecycleRevision;
     try {
@@ -93,6 +97,45 @@ export class ResilientAssistantRepository implements AssistantRepository {
 
   acceptPrompt(input: AcceptPromptInput): Promise<AcceptedTurn> {
     return this.acceptWithFallback(input);
+  }
+
+  activateModelRequest(input: ActivateModelRequestInput): Promise<MutationResult> {
+    return this.mutateWithFallback(() => this.active.activateModelRequest(input), true);
+  }
+
+  activateReopenFallback(input: ActivateReopenFallbackInput): Promise<MutationResult> {
+    return this.mutateWithFallback(() => this.active.activateReopenFallback(input), true);
+  }
+
+  cancelModelRequest(input: CancelModelRequestInput): Promise<MutationResult> {
+    return this.mutateWithFallback(() => this.active.cancelModelRequest(input), true);
+  }
+
+  async confirmModelRequest(
+    input: ConfirmModelRequestInput,
+  ): Promise<ConfirmModelRequestResult> {
+    if (this.temporaryActivated) return this.temporary.confirmModelRequest(input);
+    const snapshot = await this.coherentSnapshot();
+    try {
+      const result = await this.durable.confirmModelRequest(input);
+      if (
+        result.ok ||
+        (result.code !== "storage_unavailable" && result.code !== "storage_write_failed")
+      ) return result;
+      await this.activateTemporary(snapshot);
+      return this.temporary.confirmModelRequest(input);
+    } catch {
+      await this.activateTemporary(snapshot);
+      return this.temporary.confirmModelRequest(input);
+    }
+  }
+
+  markModelRemoved(modelKey: ModelKey, at: number): Promise<MutationResult> {
+    return this.mutateWithFallback(() => this.active.markModelRemoved(modelKey, at), true);
+  }
+
+  updateModelRequest(input: UpdateModelRequestInput): Promise<MutationResult> {
+    return this.mutateWithFallback(() => this.active.updateModelRequest(input), true);
   }
 
   claimNextTurn(input: ClaimTurnInput): Promise<ClaimedTurn | null> {
@@ -129,6 +172,10 @@ export class ResilientAssistantRepository implements AssistantRepository {
 
   checkpointResponse(input: ResponseCheckpoint): Promise<MutationResult> {
     return this.mutateWithFallback(() => this.active.checkpointResponse(input), true);
+  }
+
+  recoverTurn(input: RecoverTurnInput): Promise<MutationResult> {
+    return this.mutateWithFallback(() => this.active.recoverTurn(input), true);
   }
 
   savePersonality(text: string, at: number): Promise<MutationResult> {

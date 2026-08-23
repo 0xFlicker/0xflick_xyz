@@ -9,7 +9,9 @@ import type {
 } from "@/features/assistant/types";
 
 interface TranscriptProps {
+  activeTurnId?: TurnId | null;
   conversation: ConversationSnapshot | null;
+  onRecover: (turnId: TurnId) => void;
   onRetry: (turnId: TurnId) => void;
   temporary?: boolean;
 }
@@ -26,7 +28,7 @@ function terminalLabel(message: Message, requiresReattach: boolean): string | nu
   }
 }
 
-export function Transcript({ conversation, onRetry, temporary = false }: TranscriptProps) {
+export function Transcript({ activeTurnId = null, conversation, onRecover, onRetry, temporary = false }: TranscriptProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [following, setFollowing] = useState(true);
   const [copyState, setCopyState] = useState<Record<string, "copied" | "failed">>(
@@ -65,6 +67,21 @@ export function Transcript({ conversation, onRetry, temporary = false }: Transcr
   }
 
   const turns = conversation?.turns ?? [];
+  const boundaries = conversation?.boundaries ?? [];
+  const boundaryNode = (boundary: (typeof boundaries)[number]) => (
+    <div
+      className="flex items-center gap-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400"
+      data-model-boundary
+      key={boundary.id}
+      role="separator"
+    >
+      <span aria-hidden="true" className="h-px flex-1 bg-zinc-200 dark:bg-white/10" />
+      <span>
+        Switched to {boundary.toDisplayName} · {boundary.toExecutionName}
+      </span>
+      <span aria-hidden="true" className="h-px flex-1 bg-zinc-200 dark:bg-white/10" />
+    </div>
+  );
   return (
     <div className="relative min-h-0 flex-1">
       <div
@@ -89,16 +106,21 @@ export function Transcript({ conversation, onRetry, temporary = false }: Transcr
               </p>
             </section>
           ) : null}
+          {boundaries
+            .filter((boundary) => boundary.afterTurnId === null)
+            .sort((left, right) => left.selectionRevision - right.selectionRevision)
+            .map(boundaryNode)}
           {turns.map((turn) => {
             const user = messagesById.get(turn.userMessageId);
             const assistant = messagesById.get(turn.assistantMessageId);
             if (!user || !assistant) return null;
             const label = terminalLabel(
               assistant,
-              turn.mediaState === "requires_reattach" || turn.interruptionReason === "owner_closed",
+              turn.mediaState === "requires_reattach",
             );
             return (
-              <article className="flex flex-col gap-5" key={turn.id}>
+              <div className="contents" key={turn.id}>
+              <article className="flex flex-col gap-5">
                 <div className="ml-auto min-w-0 max-w-[88%] break-words whitespace-pre-wrap rounded-[1.4rem] rounded-br-md bg-zinc-900 px-5 py-3.5 text-[0.95rem] leading-7 text-white dark:bg-zinc-100 dark:text-zinc-950">
                   {user.text}
                   {(user.mediaRepresentationIds ?? []).length > 0 ? (
@@ -148,7 +170,9 @@ export function Transcript({ conversation, onRetry, temporary = false }: Transcr
                     </div>
                   ) : null}
                   {turn.status === "failed" ||
-                  (turn.status === "interrupted" && turn.interruptionReason === "visitor") ? (
+                  (turn.status === "interrupted" &&
+                    (turn.interruptionReason === "visitor" ||
+                      turn.interruptionReason === "owner_closed")) ? (
                     <button
                       className="mt-3 rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-800 outline-none hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-cyan-500 dark:border-white/20 dark:text-white dark:hover:bg-white/10"
                       onClick={() => onRetry(turn.id)}
@@ -157,8 +181,23 @@ export function Transcript({ conversation, onRetry, temporary = false }: Transcr
                       Retry response
                     </button>
                   ) : null}
+                  {(turn.status === "queued" || turn.status === "generating") &&
+                  turn.id !== activeTurnId ? (
+                    <button
+                      className="mt-3 rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-800 outline-none hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-cyan-500 dark:border-white/20 dark:text-white dark:hover:bg-white/10"
+                      onClick={() => onRecover(turn.id)}
+                      type="button"
+                    >
+                      Release stalled response
+                    </button>
+                  ) : null}
                 </div>
               </article>
+              {boundaries
+                .filter((boundary) => boundary.afterTurnId === turn.id)
+                .sort((left, right) => left.selectionRevision - right.selectionRevision)
+                .map(boundaryNode)}
+              </div>
             );
           })}
         </div>

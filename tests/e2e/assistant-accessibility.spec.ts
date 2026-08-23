@@ -27,6 +27,12 @@ test("supports keyboard, focus-managed dialogs, reduced motion, and reflow", asy
     Object.defineProperty(globalThis, "LanguageModel", { configurable: true, value: FakeLanguageModel });
   });
   await page.goto("/assistant");
+  const modelSummary = page.locator("[data-assistant-model-selector] summary");
+  await modelSummary.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Manage downloaded models" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(modelSummary).toBeFocused();
   if ((page.viewportSize()?.width ?? 0) < 768) {
     await page.getByRole("button", { name: "Chats" }).click();
   }

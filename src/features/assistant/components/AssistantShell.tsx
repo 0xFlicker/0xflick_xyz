@@ -60,6 +60,13 @@ export function AssistantShell({
         (message) => message.id === completedTurn.assistantMessageId,
       )?.text ?? null
     : null;
+  const activeModel = state.models.options.find(
+    (option) =>
+      option.descriptor.key ===
+      (conversation?.session.activeModelKey ??
+        state.models.activeModelKey ??
+        state.models.selectedModelKey),
+  ) ?? null;
   return (
     <main className="flex h-dvh w-full min-w-0 overflow-hidden bg-[#f4f5f3] text-zinc-950 dark:bg-[#090b0c] dark:text-white">
       <SessionSidebar
@@ -84,10 +91,10 @@ export function AssistantShell({
             <h1 className="truncate text-sm font-semibold">
               {conversation?.session.title ?? "New local chat"}
             </h1>
-            <ActivityStatus completedResponse={completedResponse} state={state} />
+            <ActivityStatus completedResponse={completedResponse} model={activeModel} state={state} />
           </div>
           <div className="flex items-center gap-2">
-            {state.environment.status === "ready" && hasContextActivity ? (
+            {activeModel?.asset.state === "ready" && hasContextActivity ? (
               <ContextDetails
                 canCompact={canCompact}
                 context={conversation?.context ?? null}

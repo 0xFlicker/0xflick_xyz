@@ -2,16 +2,22 @@ import { PROMPT_VERSION } from "@/features/assistant/constants";
 import type { LocalModelSession } from "@/features/assistant/model/modelAdapter";
 import type {
   ConversationSnapshot,
+  ModelKey,
+  ModelRuntimeIdentity,
   SessionId,
   TurnId,
 } from "@/features/assistant/types";
 
 export interface ModelSessionIdentity {
+  activeModelRevision: number;
   compactedAt: number | null;
+  contextModelRevision: number | null;
   directFromTurnId: TurnId | null;
   historyRevision: number;
+  modelKey: ModelKey;
   personalityRevision: number;
   promptVersion: number;
+  runtimeIdentity: ModelRuntimeIdentity;
   sessionId: SessionId | null;
   summarizedThroughTurnId: TurnId | null;
 }
@@ -19,13 +25,19 @@ export interface ModelSessionIdentity {
 export function modelSessionIdentity(
   conversation: ConversationSnapshot | null,
   personalityRevision: number,
+  modelKey: ModelKey = conversation?.session.activeModelKey ?? "browser-prompt-api",
+  runtimeIdentity: ModelRuntimeIdentity = "browser-prompt-api:native:prompt-api:default:1",
 ): ModelSessionIdentity {
   return {
+    activeModelRevision: conversation?.session.activeModelRevision ?? 0,
     compactedAt: conversation?.context?.compactedAt ?? null,
+    contextModelRevision: conversation?.context?.modelRevision ?? null,
     directFromTurnId: conversation?.context?.directFromTurnId ?? null,
     historyRevision: conversation?.session.historyRevision ?? 0,
+    modelKey,
     personalityRevision,
     promptVersion: conversation?.context?.promptVersion ?? PROMPT_VERSION,
+    runtimeIdentity,
     sessionId: conversation?.session.id ?? null,
     summarizedThroughTurnId:
       conversation?.context?.summarizedThroughTurnId ?? null,
@@ -45,6 +57,10 @@ function equalIdentity(
       requested.compactedAt === null);
   return (
     sameSession &&
+    retained.modelKey === requested.modelKey &&
+    retained.runtimeIdentity === requested.runtimeIdentity &&
+    retained.activeModelRevision === requested.activeModelRevision &&
+    retained.contextModelRevision === requested.contextModelRevision &&
     retained.historyRevision === requested.historyRevision &&
     retained.personalityRevision === requested.personalityRevision &&
     retained.promptVersion === requested.promptVersion &&

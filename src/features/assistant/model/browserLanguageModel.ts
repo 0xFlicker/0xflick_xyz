@@ -3,6 +3,7 @@ import type {
   LocalModelSession,
 } from "@/features/assistant/model/modelAdapter";
 import { normalizedModelError } from "@/features/assistant/model/errorMapping";
+import { MODEL_CATALOG, runtimeIdentityFor } from "@/features/assistant/model/modelCatalog";
 import type {
   MediaCapability,
   MediaKind,
@@ -72,9 +73,21 @@ function nativeInput(input: ModelInput): LanguageModelPrompt {
 }
 
 class BrowserLanguageModelSession implements LocalModelSession {
+  readonly modelKey = "browser-prompt-api" as const;
+  readonly runtimeIdentity = runtimeIdentityFor(MODEL_CATALOG[0]);
+  readonly capabilities;
   private destroyed = false;
 
-  constructor(private readonly session: LanguageModel) {}
+  constructor(
+    private readonly session: LanguageModel,
+    mediaKinds: MediaKind[],
+  ) {
+    this.capabilities = {
+      text: true,
+      image: mediaKinds.includes("image"),
+      audio: mediaKinds.includes("audio"),
+    };
+  }
 
   context(): ModelContext {
     if (this.destroyed) return { usage: null, window: null };
@@ -150,6 +163,8 @@ function normalizeAvailability(value: string): ModelAvailability {
 }
 
 export class BrowserLanguageModelAdapter implements LocalModelAdapter {
+  readonly descriptor = MODEL_CATALOG[0];
+  readonly runtimeIdentity = runtimeIdentityFor(this.descriptor);
   async availability(): Promise<ModelAvailability> {
     if (
       typeof window === "undefined" ||
@@ -177,7 +192,7 @@ export class BrowserLanguageModelAdapter implements LocalModelAdapter {
         image: false,
         audio: false,
         observedAt,
-        modelIdentity: "chrome-prompt-api",
+        modelIdentity: this.runtimeIdentity,
         error: "media_unavailable",
       };
     }
@@ -202,7 +217,7 @@ export class BrowserLanguageModelAdapter implements LocalModelAdapter {
       image,
       audio,
       observedAt,
-      modelIdentity: "chrome-prompt-api",
+      modelIdentity: this.runtimeIdentity,
       error: text ? null : "media_unavailable",
     };
   }
@@ -242,6 +257,6 @@ export class BrowserLanguageModelAdapter implements LocalModelAdapter {
       created.destroy();
       throw normalizedModelError(new DOMException("The operation was aborted", "AbortError"));
     }
-    return new BrowserLanguageModelSession(created);
+    return new BrowserLanguageModelSession(created, mediaKinds);
   }
 }

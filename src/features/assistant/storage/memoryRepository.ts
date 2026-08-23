@@ -15,10 +15,14 @@ import {
 import type {
   AcceptPromptInput,
   AcceptedTurn,
+  ActivateModelRequestInput,
+  ActivateReopenFallbackInput,
   AppMeta,
   AssistantSession,
   ClaimTurnInput,
   ClaimedTurn,
+  ConfirmModelRequestInput,
+  ConfirmModelRequestResult,
   ContextCompareAndSwap,
   ContextState,
   ConversationSnapshot,
@@ -26,14 +30,19 @@ import type {
   FinishTurnInput,
   MediaHistoryRepresentation,
   Message,
+  ModelBoundary,
+  ModelKey,
   MutationResult,
   PersonalitySetting,
   RepositorySnapshot,
+  RecoverTurnInput,
   ResponseCheckpoint,
   SessionId,
   SessionListSnapshot,
   SettingsSnapshot,
   SubmissionId,
+  CancelModelRequestInput,
+  UpdateModelRequestInput,
 } from "@/features/assistant/types";
 import {
   toMediaHistoryId,
@@ -65,6 +74,7 @@ export class MemoryAssistantRepository implements AssistantRepository {
   private readonly messages = new Map<string, Message>();
   private readonly contexts = new Map<SessionId, ContextState>();
   private readonly mediaHistory = new Map<string, MediaHistoryRepresentation>();
+  private readonly modelBoundaries = new Map<string, ModelBoundary>();
   private readonly submissions = new Map<SubmissionId, AcceptedTurn>();
   private readonly sessionListeners = new Set<Listener<SessionListSnapshot>>();
   private readonly settingsListeners = new Set<Listener<SettingsSnapshot>>();
@@ -86,28 +96,13 @@ export class MemoryAssistantRepository implements AssistantRepository {
     return "temporary";
   }
 
-  async markUnownedMediaTurns(at: number): Promise<void> {
-    for (const turn of this.turns.values()) {
-      if (turn.status !== "queued" || (turn.mediaRepresentationIds ?? []).length === 0) continue;
-      this.turns.set(turn.id, {
-        ...turn,
-        status: "interrupted",
-        completedAt: at,
-        interruptionReason: "owner_closed",
-        mediaState: "requires_reattach",
-        mediaOwnerWindowId: null,
-      });
-      const message = this.messages.get(turn.assistantMessageId);
-      if (message) this.messages.set(message.id, { ...message, status: "interrupted", updatedAt: at });
-    }
-  }
-
   hydrate(snapshot: RepositorySnapshot): void {
     this.sessions.clear();
     this.turns.clear();
     this.messages.clear();
     this.contexts.clear();
     this.mediaHistory.clear();
+    this.modelBoundaries.clear();
     this.submissions.clear();
     this.meta = {
       ...this.meta,
@@ -130,6 +125,9 @@ export class MemoryAssistantRepository implements AssistantRepository {
       conversation.messages.forEach((message) => this.messages.set(message.id, clone(message)));
       conversation.mediaRepresentations?.forEach((representation) =>
         this.mediaHistory.set(representation.id, clone(representation)),
+      );
+      conversation.boundaries.forEach((boundary) =>
+        this.modelBoundaries.set(boundary.id, clone(boundary)),
       );
       if (conversation.context) {
         this.contexts.set(conversation.session.id, clone(conversation.context));
@@ -200,6 +198,200 @@ export class MemoryAssistantRepository implements AssistantRepository {
     return { ok: true };
   }
 
+  async confirmModelRequest(
+    input: ConfirmModelRequestInput,
+  ): Promise<ConfirmModelRequestResult> {
+    const session = this.sessions.get(input.sessionId);
+    if (!session) return { ok: false, code: "session_deleted" };
+    if (this.hasNonterminalTurn(input.sessionId)) return { ok: false, code: "chat_busy" };
+    if (
+      session.activeModelKey === input.targetModelKey &&
+      !session.requiresExplicitReplacement &&
+      session.modelUnavailableReason === "none"
+    ) {
+      return { ok: true, request: null };
+    }
+    const revision = session.modelRequestRevision + 1;
+    const request = {
+      requestId: input.requestId,
+      revision,
+      targetModelKey: input.targetModelKey,
+      sourceModelKey: session.activeModelKey,
+      ownerWindowId: input.ownerWindowId,
+      reason: input.reason,
+      status: "preparing" as const,
+      capturedEpoch: session.epoch,
+      capturedHistoryRevision: session.historyRevision,
+      confirmedAt: input.at,
+    };
+    this.sessions.set(session.id, {
+      ...session,
+      modelRequestRevision: revision,
+      pendingModelRequest: request,
+      updatedAt: input.at,
+    });
+    this.emitSessions();
+    this.emitConversation(session.id);
+    return { ok: true, request: clone(request) };
+  }
+
+  async updateModelRequest(input: UpdateModelRequestInput): Promise<MutationResult> {
+    const session = this.sessions.get(input.sessionId);
+    if (!session) return { ok: false, code: "session_deleted" };
+    const request = session.pendingModelRequest;
+    if (
+      !request ||
+      request.requestId !== input.requestId ||
+      request.revision !== input.revision ||
+      session.modelRequestRevision !== input.revision
+    ) {
+      return { ok: false, code: "model_request_stale" };
+    }
+    this.sessions.set(session.id, {
+      ...session,
+      pendingModelRequest: { ...request, status: input.status },
+    });
+    this.emitConversation(session.id);
+    return { ok: true };
+  }
+
+  async cancelModelRequest(input: CancelModelRequestInput): Promise<MutationResult> {
+    const session = this.sessions.get(input.sessionId);
+    if (!session) return { ok: false, code: "session_deleted" };
+    const request = session.pendingModelRequest;
+    if (
+      !request ||
+      request.requestId !== input.requestId ||
+      request.revision !== input.revision ||
+      session.modelRequestRevision !== input.revision
+    ) {
+      return { ok: false, code: "model_request_stale" };
+    }
+    this.sessions.set(session.id, { ...session, pendingModelRequest: null });
+    this.emitConversation(session.id);
+    return { ok: true };
+  }
+
+  async activateModelRequest(input: ActivateModelRequestInput): Promise<MutationResult> {
+    const session = this.sessions.get(input.sessionId);
+    if (!session) return { ok: false, code: "session_deleted" };
+    const request = session.pendingModelRequest;
+    if (
+      !request ||
+      request.requestId !== input.requestId ||
+      request.revision !== input.revision ||
+      request.ownerWindowId !== input.ownerWindowId ||
+      request.targetModelKey !== input.descriptor.key ||
+      session.modelRequestRevision !== input.revision
+    ) {
+      return { ok: false, code: "model_request_stale" };
+    }
+    if (
+      session.epoch !== input.expectedEpoch ||
+      session.historyRevision !== input.expectedHistoryRevision ||
+      request.capturedEpoch !== input.expectedEpoch ||
+      request.capturedHistoryRevision !== input.expectedHistoryRevision
+    ) {
+      return { ok: false, code: "revision_conflict" };
+    }
+    if (this.hasNonterminalTurn(input.sessionId)) return { ok: false, code: "chat_busy" };
+    const afterTurnId = this.latestTerminalTurnId(input.sessionId);
+    const boundary: ModelBoundary = {
+      id: input.requestId,
+      sessionId: input.sessionId,
+      selectionRevision: input.revision,
+      fromModelKey: session.activeModelKey,
+      toModelKey: input.descriptor.key,
+      toDisplayName: input.descriptor.displayName,
+      toExecutionName: input.descriptor.executionName,
+      reason: request.reason,
+      confirmation: "visitor",
+      afterTurnId,
+      createdAt: input.at,
+    };
+    if (this.modelBoundaries.has(boundary.id)) {
+      return { ok: false, code: "model_request_stale" };
+    }
+    if (input.context) this.contexts.set(session.id, clone(input.context));
+    else this.contexts.delete(session.id);
+    this.modelBoundaries.set(boundary.id, boundary);
+    this.sessions.set(session.id, {
+      ...session,
+      activeModelKey: input.descriptor.key,
+      activeModelRevision: input.revision,
+      pendingModelRequest: null,
+      historyRevision: session.historyRevision + 1,
+      requiresExplicitReplacement: false,
+      modelUnavailableReason: "none",
+      updatedAt: input.at,
+    });
+    this.emitSessions();
+    this.emitConversation(session.id);
+    return { ok: true };
+  }
+
+  async activateReopenFallback(
+    input: ActivateReopenFallbackInput,
+  ): Promise<MutationResult> {
+    const session = this.sessions.get(input.sessionId);
+    if (!session) return { ok: false, code: "session_deleted" };
+    if (session.requiresExplicitReplacement) return { ok: false, code: "model_not_ready" };
+    if (
+      session.activeModelKey !== input.expectedActiveModelKey ||
+      session.activeModelRevision !== input.expectedActiveRevision ||
+      session.pendingModelRequest
+    ) {
+      return { ok: false, code: "revision_conflict" };
+    }
+    if (this.hasNonterminalTurn(input.sessionId)) return { ok: false, code: "chat_busy" };
+    const revision = session.modelRequestRevision + 1;
+    const id = `reopen:${session.id}:${revision}`;
+    this.modelBoundaries.set(id, {
+      id,
+      sessionId: session.id,
+      selectionRevision: revision,
+      fromModelKey: session.activeModelKey,
+      toModelKey: input.descriptor.key,
+      toDisplayName: input.descriptor.displayName,
+      toExecutionName: input.descriptor.executionName,
+      reason: "reopen_fallback",
+      confirmation: "automatic_reopen",
+      afterTurnId: this.latestTerminalTurnId(session.id),
+      createdAt: input.at,
+    });
+    this.contexts.delete(session.id);
+    this.sessions.set(session.id, {
+      ...session,
+      activeModelKey: input.descriptor.key,
+      activeModelRevision: revision,
+      modelRequestRevision: revision,
+      historyRevision: session.historyRevision + 1,
+      modelUnavailableReason: "none",
+      updatedAt: input.at,
+    });
+    this.emitSessions();
+    this.emitConversation(session.id);
+    return { ok: true };
+  }
+
+  async markModelRemoved(modelKey: ModelKey, at: number): Promise<MutationResult> {
+    const affected: SessionId[] = [];
+    for (const session of this.sessions.values()) {
+      if (session.activeModelKey !== modelKey) continue;
+      this.sessions.set(session.id, {
+        ...session,
+        pendingModelRequest: null,
+        requiresExplicitReplacement: true,
+        modelUnavailableReason: "removed",
+        updatedAt: at,
+      });
+      affected.push(session.id);
+    }
+    this.emitSessions();
+    affected.forEach((sessionId) => this.emitConversation(sessionId));
+    return { ok: true };
+  }
+
   async acceptPrompt(input: AcceptPromptInput): Promise<AcceptedTurn> {
     const text = input.text.trim();
     if (text.length === 0 && !input.media?.representations.length) {
@@ -212,6 +404,18 @@ export class MemoryAssistantRepository implements AssistantRepository {
     let session = input.sessionId ? this.sessions.get(input.sessionId) : undefined;
     if (input.sessionId && !session) throw new Error("session_deleted");
     if (!session && this.sessions.size >= SESSION_LIMIT) throw new Error("session_limit");
+    if (session?.pendingModelRequest) throw new Error("model_change_in_progress");
+    if (session && (session.requiresExplicitReplacement || session.modelUnavailableReason !== "none")) {
+      throw new Error("model_not_ready");
+    }
+    if (
+      session &&
+      input.model &&
+      (input.model.key !== session.activeModelKey ||
+        input.model.revision !== session.activeModelRevision)
+    ) {
+      throw new Error("revision_conflict");
+    }
 
     const turnId = toTurnId(uuid());
     const sessionId = session?.id ?? toSessionId(uuid());
@@ -228,6 +432,11 @@ export class MemoryAssistantRepository implements AssistantRepository {
     }));
 
     if (!session) {
+      const model = input.model ?? {
+        key: "browser-prompt-api" as const,
+        revision: 0,
+        runtimeIdentity: "browser-prompt-api:native:prompt-api:default:1",
+      };
       session = {
         id: sessionId,
         epoch: this.meta.datasetEpoch,
@@ -236,10 +445,21 @@ export class MemoryAssistantRepository implements AssistantRepository {
         createdAt: input.at,
         updatedAt: input.at,
         historyRevision: 0,
+        activeModelKey: model.key,
+        activeModelRevision: model.revision,
+        modelRequestRevision: model.revision,
+        pendingModelRequest: null,
+        requiresExplicitReplacement: false,
+        modelUnavailableReason: "none",
       };
       this.sessions.set(sessionId, session);
     }
 
+    const turnModel = input.model ?? {
+      key: session.activeModelKey,
+      revision: session.activeModelRevision,
+      runtimeIdentity: "browser-prompt-api:native:prompt-api:default:1",
+    };
     const turn: ConversationTurn = {
       id: turnId,
       sessionId,
@@ -258,6 +478,9 @@ export class MemoryAssistantRepository implements AssistantRepository {
       mediaRepresentationIds: mediaRepresentations.map((representation) => representation.id),
       mediaOwnerWindowId: input.media?.ownerWindowId ?? null,
       mediaState: mediaRepresentations.length > 0 ? "ephemeral" : "none",
+      modelKey: turnModel.key,
+      modelRevision: turnModel.revision,
+      modelRuntimeIdentity: turnModel.runtimeIdentity,
     };
     const userMessage: Message = {
       id: userMessageId,
@@ -299,6 +522,9 @@ export class MemoryAssistantRepository implements AssistantRepository {
   async claimNextTurn(input: ClaimTurnInput): Promise<ClaimedTurn | null> {
     if (input.epoch !== this.meta.datasetEpoch) return null;
     if (!this.sessions.has(input.sessionId)) return null;
+    if (this.sessionTurns(input.sessionId).some((turn) => turn.status === "generating")) {
+      return null;
+    }
 
     const turn = this.sessionTurns(input.sessionId)
       .filter((candidate) => candidate.status === "queued")
@@ -390,6 +616,47 @@ export class MemoryAssistantRepository implements AssistantRepository {
     return { ok: true };
   }
 
+  async recoverTurn(input: RecoverTurnInput): Promise<MutationResult> {
+    if (input.epoch !== this.meta.datasetEpoch) {
+      return { ok: false, code: "dataset_cleared" };
+    }
+    const session = this.sessions.get(input.sessionId);
+    if (!session) return { ok: false, code: "session_deleted" };
+    const turn = this.turns.get(input.turnId);
+    if (
+      !turn ||
+      turn.sessionId !== input.sessionId ||
+      !["queued", "generating"].includes(turn.status) ||
+      turn.generationAttemptId !== input.expectedAttemptId
+    ) {
+      return { ok: false, code: "revision_conflict" };
+    }
+    const message = this.messages.get(turn.assistantMessageId);
+    if (!message) return { ok: false, code: "revision_conflict" };
+    const hasMedia = (turn.mediaRepresentationIds ?? []).length > 0;
+    this.turns.set(turn.id, {
+      ...turn,
+      completedAt: input.at,
+      interruptionReason: "owner_closed",
+      mediaOwnerWindowId: null,
+      mediaState: hasMedia ? "requires_reattach" : "none",
+      status: "interrupted",
+    });
+    this.messages.set(message.id, {
+      ...message,
+      status: "interrupted",
+      updatedAt: input.at,
+    });
+    this.sessions.set(session.id, {
+      ...session,
+      historyRevision: session.historyRevision + 1,
+      updatedAt: input.at,
+    });
+    this.emitSessions();
+    this.emitConversation(input.sessionId);
+    return { ok: true };
+  }
+
   async commitContext(input: ContextCompareAndSwap): Promise<MutationResult> {
     const session = this.sessions.get(input.context.sessionId);
     if (!session) return { ok: false, code: "session_deleted" };
@@ -425,6 +692,9 @@ export class MemoryAssistantRepository implements AssistantRepository {
     if (!this.sessions.has(sessionId)) return { ok: false, code: "session_deleted" };
     this.sessions.delete(sessionId);
     this.contexts.delete(sessionId);
+    for (const [id, boundary] of this.modelBoundaries) {
+      if (boundary.sessionId === sessionId) this.modelBoundaries.delete(id);
+    }
     for (const turn of this.sessionTurns(sessionId)) {
       this.turns.delete(turn.id);
       this.messages.delete(turn.userMessageId);
@@ -453,6 +723,7 @@ export class MemoryAssistantRepository implements AssistantRepository {
     this.messages.clear();
     this.mediaHistory.clear();
     this.contexts.clear();
+    this.modelBoundaries.clear();
     this.submissions.clear();
     this.personality = blankPersonality();
     this.meta = {
@@ -514,6 +785,23 @@ export class MemoryAssistantRepository implements AssistantRepository {
     return [...this.turns.values()].filter((turn) => turn.sessionId === sessionId);
   }
 
+  private hasNonterminalTurn(sessionId: SessionId): boolean {
+    return this.sessionTurns(sessionId).some(
+      (turn) => turn.status === "queued" || turn.status === "generating",
+    );
+  }
+
+  private latestTerminalTurnId(sessionId: SessionId): ReturnType<typeof toTurnId> | null {
+    return this.sessionTurns(sessionId)
+      .filter((turn) => ["completed", "interrupted", "failed"].includes(turn.status))
+      .sort(
+        (left, right) =>
+          (right.completedAt ?? right.promptCreatedAt) -
+            (left.completedAt ?? left.promptCreatedAt) ||
+          right.id.localeCompare(left.id),
+      )[0]?.id ?? null;
+  }
+
   private conversationSnapshot(sessionId: SessionId): ConversationSnapshot | null {
     const session = this.sessions.get(sessionId);
     if (!session) return null;
@@ -529,6 +817,9 @@ export class MemoryAssistantRepository implements AssistantRepository {
       if (assistant) orderedMessages.push(assistant);
     }
     return clone({
+      boundaries: [...this.modelBoundaries.values()]
+        .filter((boundary) => boundary.sessionId === sessionId)
+        .sort((left, right) => left.selectionRevision - right.selectionRevision),
       context: this.contexts.get(sessionId) ?? null,
       messages: orderedMessages,
       mediaRepresentations: [...this.mediaHistory.values()].filter(

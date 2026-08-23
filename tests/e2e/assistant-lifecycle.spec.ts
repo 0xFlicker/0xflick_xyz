@@ -6,10 +6,14 @@ test("unsupported visitors keep the full takeover without a synthetic answer", a
       configurable: true,
       value: undefined,
     });
+    Object.defineProperty(globalThis, "Worker", {
+      configurable: true,
+      value: undefined,
+    });
   });
   await page.goto("/assistant");
 
-  await expect(page.getByRole("heading", { name: /not available here/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /No local model can be offered here/i })).toBeVisible();
   await expect(page.getByText(/generated locally on this device/i)).toBeVisible();
   await expect(page.getByLabel("Message the local assistant")).toHaveCount(0);
 });
@@ -52,9 +56,10 @@ test("downloadable model requires consent and reports preparation", async ({ pag
   });
   await page.goto("/assistant");
 
-  const prepare = page.getByRole("button", { name: "Prepare on this device" });
+  const prepare = page.getByRole("button", { name: "Prepare this model" });
   await expect(prepare).toBeVisible();
   await prepare.click();
+  await page.getByRole("button", { name: "Download and prepare" }).click();
   await expect(page.getByLabel("Message the local assistant")).toBeVisible();
 });
 

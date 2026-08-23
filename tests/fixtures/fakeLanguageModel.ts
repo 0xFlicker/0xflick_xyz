@@ -10,9 +10,12 @@ import type {
   ModelInput,
   ModelProgress,
   ModelPrompt,
+  LocalModelDescriptor,
 } from "@/features/assistant/types";
+import { MODEL_CATALOG, runtimeIdentityFor } from "@/features/assistant/model/modelCatalog";
 
 export interface FakeModelScenario {
+  descriptor?: LocalModelDescriptor;
   availability?: ModelAvailability;
   capabilities?: Partial<Pick<MediaCapability, "text" | "image" | "audio">>;
   chunks?: string[];
@@ -51,6 +54,9 @@ async function wait(delayMs: number, signal?: AbortSignal): Promise<void> {
 }
 
 class FakeSession implements LocalModelSession {
+  readonly modelKey: LocalModelDescriptor["key"];
+  readonly runtimeIdentity: string;
+  readonly capabilities: LocalModelDescriptor["capabilities"];
   private destroyed = false;
   private readonly overflowListeners = new Set<() => void>();
 
@@ -61,7 +67,12 @@ class FakeSession implements LocalModelSession {
       FakeModelScenario,
     private readonly onDestroy: () => void,
     private readonly captureInput: (input: ModelInput) => void,
-  ) {}
+    descriptor: LocalModelDescriptor,
+  ) {
+    this.modelKey = descriptor.key;
+    this.runtimeIdentity = runtimeIdentityFor(descriptor);
+    this.capabilities = descriptor.capabilities;
+  }
 
   context(): ModelContext {
     return this.scenario.context;
@@ -117,6 +128,7 @@ export function createFakeModelAdapter(scenario: FakeModelScenario = {}): {
     ...scenario,
   };
   const lifecycle = { created: 0, destroyed: 0 };
+  const descriptor = scenario.descriptor ?? MODEL_CATALOG[0];
   const createdPrompts: ModelPrompt[][] = [];
   const capturedInputs: ModelInput[] = [];
   let currentAvailability = resolved.availability;
@@ -127,6 +139,8 @@ export function createFakeModelAdapter(scenario: FakeModelScenario = {}): {
   };
 
   const adapter: LocalModelAdapter = {
+    descriptor,
+    runtimeIdentity: runtimeIdentityFor(descriptor),
     availability: async () => currentAvailability,
     capabilities: async () => ({
       ...capabilities,
@@ -162,6 +176,7 @@ export function createFakeModelAdapter(scenario: FakeModelScenario = {}): {
           lifecycle.destroyed += 1;
         },
         (input) => capturedInputs.push(input),
+        descriptor,
       );
     },
   };

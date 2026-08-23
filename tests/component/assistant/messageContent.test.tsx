@@ -65,6 +65,7 @@ describe("assistant Markdown safety", () => {
     render(
       <Transcript
         conversation={await repository.getConversation(accepted.sessionId)}
+        onRecover={vi.fn()}
         onRetry={vi.fn()}
       />,
     );

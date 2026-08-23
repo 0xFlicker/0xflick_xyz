@@ -34,9 +34,9 @@ test("persists, reloads, deletes one chat, and clears all browser-local history"
   await page.goto("/assistant");
   await page.getByLabel("Message the local assistant").fill("Durable session");
   await page.getByRole("button", { name: "Send message" }).click();
-  await expect(page.getByText("Persisted local answer")).toBeVisible();
+  await expect(page.getByText("Persisted local answer", { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByText("Persisted local answer")).toBeVisible();
+  await expect(page.getByText("Persisted local answer", { exact: true })).toBeVisible();
 
   await openChatsIfNeeded(page);
   await page.getByRole("button", { name: "New chat" }).click();
@@ -51,7 +51,7 @@ test("persists, reloads, deletes one chat, and clears all browser-local history"
   await page.getByRole("button", { name: "Delete Second durable session" }).click();
   await expect(page.getByRole("dialog", { name: /delete second durable session/i })).toBeVisible();
   await page.getByRole("button", { name: "Delete chat" }).click();
-  await expect(page.getByText("Persisted local answer")).toBeVisible();
+  await expect(page.getByText("Persisted local answer", { exact: true })).toBeVisible();
 
   await openChatsIfNeeded(page);
   await page.getByRole("button", { name: "Clear all chats" }).click();
@@ -134,7 +134,7 @@ test("falls back visibly to page-lifetime history when IndexedDB cannot open", a
   await expect(page.getByRole("status")).toContainText("Not saved");
   await page.getByLabel("Message the local assistant").fill("Temporary prompt");
   await page.getByRole("button", { name: "Send message" }).click();
-  await expect(page.getByText("Temporary answer")).toBeVisible();
+  await expect(page.getByText("Temporary answer", { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByText("Temporary answer")).toHaveCount(0);
   await expect(page.getByRole("status")).toContainText("Not saved");

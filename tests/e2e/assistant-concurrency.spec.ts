@@ -29,11 +29,11 @@ test("two pages converge queued turns through one session lock", async ({ browse
   await first.goto("/assistant");
   await first.getByLabel("Message the local assistant").fill("Seed session");
   await first.getByRole("button", { name: "Send message" }).click();
-  await expect(first.getByText("Answer for Seed session")).toBeVisible();
+  await expect(first.getByText("Answer for Seed session", { exact: true })).toBeVisible();
 
   const second = await context.newPage();
   await second.goto("/assistant");
-  await expect(second.getByText("Answer for Seed session")).toBeVisible();
+  await expect(second.getByText("Answer for Seed session", { exact: true })).toBeVisible();
   await Promise.all([
     first.getByLabel("Message the local assistant").fill("Turn from first"),
     second.getByLabel("Message the local assistant").fill("Turn from second"),
@@ -44,13 +44,13 @@ test("two pages converge queued turns through one session lock", async ({ browse
   ]);
 
   for (const page of [first, second]) {
-    await expect(page.getByText("Answer for Turn from first")).toHaveCount(1);
-    await expect(page.getByText("Answer for Turn from second")).toHaveCount(1);
+    await expect(page.getByText("Answer for Turn from first", { exact: true })).toHaveCount(1);
+    await expect(page.getByText("Answer for Turn from second", { exact: true })).toHaveCount(1);
   }
   await context.close();
 });
 
-test("a queued page recovers an orphaned generation after the lock owner closes", async ({ browser }) => {
+test("a queued page explicitly releases an orphaned generation after the lock owner closes", async ({ browser }) => {
   const context = await browser.newContext();
   await context.addInitScript(() => {
     class FakeLanguageModel {
@@ -82,7 +82,7 @@ test("a queued page recovers an orphaned generation after the lock owner closes"
   await owner.goto("/assistant");
   await owner.getByLabel("Message the local assistant").fill("Seed");
   await owner.getByRole("button", { name: "Send message" }).click();
-  await expect(owner.getByText("Recovered answer for Seed")).toBeVisible();
+  await expect(owner.getByText("Recovered answer for Seed", { exact: true })).toBeVisible();
 
   const waiting = await context.newPage();
   await waiting.goto("/assistant");
@@ -93,7 +93,8 @@ test("a queued page recovers an orphaned generation after the lock owner closes"
   await waiting.getByRole("button", { name: "Send message" }).click();
   await owner.close();
 
-  await expect(waiting.getByText("Recovered answer for Queued recovery turn")).toBeVisible();
+  await waiting.getByRole("button", { name: "Release stalled response" }).first().click();
+  await expect(waiting.getByText("Recovered answer for Queued recovery turn", { exact: true })).toBeVisible();
   await expect(waiting.getByText("Stopped")).toBeVisible();
   await context.close();
 });
@@ -126,7 +127,7 @@ test("deletion during generation prevents stale checkpoints from recreating the 
   await generating.goto("/assistant");
   await generating.getByLabel("Message the local assistant").fill("Race session");
   await generating.getByRole("button", { name: "Send message" }).click();
-  await expect(generating.getByText("Seed answer")).toBeVisible();
+  await expect(generating.getByText("Seed answer", { exact: true })).toBeVisible();
 
   const deleting = await context.newPage();
   await deleting.goto("/assistant");

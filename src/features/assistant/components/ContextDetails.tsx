@@ -59,7 +59,7 @@ function explanation(context: ContextState | null): string {
       return "This conversation needs more room before the assistant can continue.";
     case "unknown":
     case undefined:
-      return "Chrome is not reporting a context limit for this conversation.";
+      return "The active local model is not reporting a context limit for this conversation.";
   }
 }
 

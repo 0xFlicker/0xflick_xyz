@@ -12,11 +12,15 @@ function identity(
   historyRevision = 0,
 ): ModelSessionIdentity {
   return {
+    activeModelRevision: 0,
     compactedAt: null,
+    contextModelRevision: 0,
     directFromTurnId: null,
     historyRevision,
+    modelKey: "browser-prompt-api",
     personalityRevision: 0,
     promptVersion: 1,
+    runtimeIdentity: "browser-prompt-api:native:prompt-api:1",
     sessionId,
     summarizedThroughTurnId: null,
   };
@@ -82,5 +86,39 @@ describe("ModelSessionCache", () => {
     cache.clear();
 
     expect(fake.lifecycle.destroyed).toBe(2);
+  });
+
+  it("destroys retained state at every model or runtime boundary", async () => {
+    const fake = createFakeModelAdapter();
+    const session = await fake.adapter.create([]);
+    const cache = new ModelSessionCache();
+    const retained = identity(toSessionId("session-1"), 2);
+
+    cache.store(retained, session);
+
+    expect(
+      cache.take({
+        ...retained,
+        modelKey: "smollm2-135m-wasm",
+        runtimeIdentity: "smollm2-135m-wasm:pinned:wasm:q4:1",
+      }),
+    ).toBeNull();
+    expect(fake.lifecycle.destroyed).toBe(1);
+  });
+
+  it.each([
+    ["activeModelRevision", 1],
+    ["contextModelRevision", 1],
+    ["personalityRevision", 1],
+    ["promptVersion", 2],
+  ] as const)("rejects a %s mismatch", async (field, value) => {
+    const fake = createFakeModelAdapter();
+    const session = await fake.adapter.create([]);
+    const cache = new ModelSessionCache();
+    const retained = identity(toSessionId("session-1"), 2);
+    cache.store(retained, session);
+
+    expect(cache.take({ ...retained, [field]: value })).toBeNull();
+    expect(fake.lifecycle.destroyed).toBe(1);
   });
 });

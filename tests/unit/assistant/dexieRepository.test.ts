@@ -1,23 +1,29 @@
+import Dexie from "dexie";
 import { describe, expect, it, vi } from "vitest";
 
 import { AssistantDatabase } from "@/features/assistant/storage/database";
+import { MODEL_CATALOG } from "@/features/assistant/model/modelCatalog";
 import {
   DexieAssistantRepository,
   RepositoryMutationError,
 } from "@/features/assistant/storage/dexieRepository";
 import {
   toAttemptId,
+  toMessageId,
+  toSessionId,
   toSubmissionId,
+  toTurnId,
 } from "@/features/assistant/types";
 
 describe("DexieAssistantRepository", () => {
-  it("defines the complete version-one local schema and coordination indexes", () => {
+  it("defines the v3 schema with durable model boundaries and coordination indexes", () => {
     const database = new AssistantDatabase("schema-inspection");
     expect(database.tables.map((table) => table.name).sort()).toEqual([
       "contexts",
       "mediaHistory",
       "messages",
       "meta",
+      "modelBoundaries",
       "sessions",
       "settings",
       "tombstones",
@@ -26,7 +32,76 @@ describe("DexieAssistantRepository", () => {
     expect(database.turns.schema.indexes.map((index) => index.name)).toEqual(
       expect.arrayContaining(["sessionId", "submissionId", "[sessionId+status]", "[sessionId+promptCreatedAt]"]),
     );
+    expect(database.modelBoundaries.schema.indexes.map((index) => index.name)).toEqual(
+      expect.arrayContaining([
+        "sessionId",
+        "selectionRevision",
+        "afterTurnId",
+        "[sessionId+selectionRevision]",
+      ]),
+    );
     database.close();
+  });
+
+  it("rewrites v2 native records to required revision-zero model identity", async () => {
+    const name = "assistant-v2-upgrade";
+    const sessionId = toSessionId("legacy-session");
+    const turnId = toTurnId("legacy-turn");
+    const legacy = new Dexie(name);
+    legacy.version(2).stores({
+      contexts: "&sessionId, epoch, state",
+      messages: "&id, sessionId, turnId, [sessionId+createdAt]",
+      meta: "&key",
+      sessions: "&id, epoch, updatedAt, [epoch+updatedAt]",
+      settings: "&key",
+      tombstones: "&sessionId, epoch",
+      turns:
+        "&id, sessionId, submissionId, [sessionId+status], [sessionId+promptCreatedAt]",
+      mediaHistory:
+        "&id, sessionId, turnId, messageId, createdAt, [sessionId+createdAt], [turnId+createdAt]",
+    });
+    await legacy.open();
+    await legacy.table("sessions").add({
+      id: sessionId,
+      epoch: 0,
+      title: "Legacy",
+      titleSourceTurnId: turnId,
+      createdAt: 1,
+      updatedAt: 1,
+      historyRevision: 1,
+    });
+    await legacy.table("turns").add({
+      id: turnId,
+      sessionId,
+      epoch: 0,
+      promptCreatedAt: 1,
+      submissionId: toSubmissionId("legacy-submission"),
+      userMessageId: toMessageId("legacy-user"),
+      assistantMessageId: toMessageId("legacy-assistant"),
+      status: "completed",
+      generationAttemptId: null,
+      startedAt: 1,
+      completedAt: 1,
+      interruptionReason: null,
+      failureCode: null,
+    });
+    legacy.close();
+
+    const upgraded = new AssistantDatabase(name);
+    await upgraded.open();
+    expect(await upgraded.sessions.get(sessionId)).toMatchObject({
+      activeModelKey: "browser-prompt-api",
+      activeModelRevision: 0,
+      modelRequestRevision: 0,
+      pendingModelRequest: null,
+    });
+    expect(await upgraded.turns.get(turnId)).toMatchObject({
+      modelKey: "browser-prompt-api",
+      modelRevision: 0,
+      modelRuntimeIdentity: "browser-prompt-api:native:prompt-api:default:1",
+    });
+    upgraded.close();
+    await Dexie.delete(name);
   });
 
   it("persists coherent sessions, deterministic titles, turns, and checkpoints across instances", async () => {
@@ -235,6 +310,113 @@ describe("DexieAssistantRepository", () => {
     expect((await repository.getConversation(accepted.sessionId))?.messages.at(-1)?.text).toBe(
       "Completed first",
     );
+    repository.destroy();
+  });
+
+  it("uses explicit attempt-aware recovery without Web Locks", async () => {
+    const repository = new DexieAssistantRepository();
+    await repository.initialize();
+    const accepted = await repository.acceptPrompt({
+      at: 1,
+      sessionId: null,
+      submissionId: toSubmissionId("explicit-recovery"),
+      text: "Recover this attempt",
+    });
+    const attemptId = toAttemptId("explicit-recovery-attempt");
+    await repository.claimNextTurn({
+      at: 2,
+      attemptId,
+      epoch: accepted.epoch,
+      sessionId: accepted.sessionId,
+    });
+    await expect(repository.recoverTurn({
+      at: 3,
+      epoch: accepted.epoch,
+      expectedAttemptId: attemptId,
+      sessionId: accepted.sessionId,
+      turnId: accepted.turnId,
+    })).resolves.toEqual({ ok: true });
+    await expect(repository.finishTurn({
+      at: 4,
+      attemptId,
+      epoch: accepted.epoch,
+      sessionId: accepted.sessionId,
+      status: "completed",
+      text: "Stale completion",
+      turnId: accepted.turnId,
+    })).resolves.toEqual({ ok: false, code: "already_terminal" });
+    expect((await repository.getConversation(accepted.sessionId))?.turns[0]).toMatchObject({
+      interruptionReason: "owner_closed",
+      status: "interrupted",
+    });
+    repository.destroy();
+  });
+
+  it("uses durable latest-confirmed CAS when Web Locks are unavailable", async () => {
+    const repository = new DexieAssistantRepository();
+    await repository.initialize();
+    const accepted = await repository.acceptPrompt({
+      at: 1,
+      sessionId: null,
+      submissionId: toSubmissionId("selection-cas"),
+      text: "Complete before switching",
+    });
+    const attemptId = toAttemptId("selection-cas-attempt");
+    await repository.claimNextTurn({
+      at: 2,
+      attemptId,
+      epoch: accepted.epoch,
+      sessionId: accepted.sessionId,
+    });
+    await repository.finishTurn({
+      at: 3,
+      attemptId,
+      epoch: accepted.epoch,
+      sessionId: accepted.sessionId,
+      status: "completed",
+      text: "Done",
+      turnId: accepted.turnId,
+    });
+    const first = await repository.confirmModelRequest({
+      at: 4,
+      ownerWindowId: "a",
+      reason: "visitor",
+      requestId: "dexie-a",
+      sessionId: accepted.sessionId,
+      targetModelKey: "smollm2-360m-webgpu",
+    });
+    const second = await repository.confirmModelRequest({
+      at: 5,
+      ownerWindowId: "b",
+      reason: "visitor",
+      requestId: "dexie-b",
+      sessionId: accepted.sessionId,
+      targetModelKey: "smollm2-135m-wasm",
+    });
+    if (!first.ok || !first.request || !second.ok || !second.request) throw new Error("setup");
+    await expect(repository.activateModelRequest({
+      at: 6,
+      context: null,
+      descriptor: MODEL_CATALOG[1],
+      expectedEpoch: first.request.capturedEpoch,
+      expectedHistoryRevision: first.request.capturedHistoryRevision,
+      ownerWindowId: "a",
+      requestId: first.request.requestId,
+      revision: first.request.revision,
+      sessionId: accepted.sessionId,
+    })).resolves.toEqual({ ok: false, code: "model_request_stale" });
+    await expect(repository.activateModelRequest({
+      at: 7,
+      context: null,
+      descriptor: MODEL_CATALOG[2],
+      expectedEpoch: second.request.capturedEpoch,
+      expectedHistoryRevision: second.request.capturedHistoryRevision,
+      ownerWindowId: "b",
+      requestId: second.request.requestId,
+      revision: second.request.revision,
+      sessionId: accepted.sessionId,
+    })).resolves.toEqual({ ok: true });
+    expect((await repository.getConversation(accepted.sessionId))?.boundaries).toHaveLength(1);
     repository.destroy();
   });
 });

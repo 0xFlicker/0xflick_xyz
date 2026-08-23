@@ -5,25 +5,33 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "r
 import { v4 as uuid } from "uuid";
 
 import { buildReconstructionPrompts, currentTurnPrompt } from "@/features/assistant/context/prompt";
-import { compactConversation } from "@/features/assistant/context/compaction";
+import {
+  compactConversation,
+  createSwitchCompactionCandidate,
+} from "@/features/assistant/context/compaction";
 import {
   evaluateContext,
-  partitionCompletedTurns,
+  completedConversationTurns,
+  packTargetContext,
   projectedContext,
 } from "@/features/assistant/context/contextManager";
 import { AssistantShell } from "@/features/assistant/components/AssistantShell";
 import { AvailabilityPanel } from "@/features/assistant/components/AvailabilityPanel";
 import { ConfirmationDialog } from "@/features/assistant/components/ConfirmationDialog";
 import { Composer, type ComposerHandle } from "@/features/assistant/components/Composer";
+import { ModelManager } from "@/features/assistant/components/ModelManager";
+import { ModelPreparationDialog } from "@/features/assistant/components/ModelPreparationDialog";
+import { ModelSelector } from "@/features/assistant/components/ModelSelector";
 import { Transcript } from "@/features/assistant/components/Transcript";
 import {
   ASSISTANT_LOCK_PREFIX,
-  MODEL_AVAILABILITY_POLL_INTERVAL_MS,
+  PORTABLE_OUTPUT_TOKEN_ALLOWANCE,
   PROMPT_VERSION,
   STREAM_CHECKPOINT_INTERVAL_MS,
 } from "@/features/assistant/constants";
-import { BrowserLanguageModelAdapter } from "@/features/assistant/model/browserLanguageModel";
 import type { LocalModelAdapter, LocalModelSession } from "@/features/assistant/model/modelAdapter";
+import { ModelController } from "@/features/assistant/model/modelController";
+import { modelDescriptor } from "@/features/assistant/model/modelCatalog";
 import {
   ModelSessionCache,
   modelSessionIdentity,
@@ -46,6 +54,8 @@ import type {
   MediaPart,
   ModelContext,
   ModelErrorCode,
+  ModelKey,
+  PendingModelRequest,
   RepositorySnapshot,
   SessionId,
   SessionListSnapshot,
@@ -95,6 +105,11 @@ function errorCode(error: unknown): ModelErrorCode {
       case "empty_response":
       case "media_unavailable":
       case "media_rehydration_required":
+      case "storage_quota":
+      case "corrupt_assets":
+      case "resource_exhausted":
+      case "runtime_terminated":
+      case "unsupported_device":
         return error.message;
     }
   }
@@ -110,7 +125,7 @@ function measuredContextState(
   const prior = conversation.context;
   const assessment = evaluateContext({ ...measurement, overflowed });
   const state =
-    assessment.state === "fresh" && prior?.summaryText
+    assessment.state === "fresh" && prior?.state === "compacted"
       ? "compacted"
       : assessment.state;
   return {
@@ -127,6 +142,10 @@ function measuredContextState(
     personalityRevision,
     compactedAt: prior?.compactedAt ?? null,
     overflowedAt: overflowed ? prior?.overflowedAt ?? Date.now() : null,
+    modelKey: conversation.session.activeModelKey,
+    modelRevision: conversation.session.activeModelRevision,
+    generatedByModelKey: prior?.generatedByModelKey ?? null,
+    appliesThroughTurnId: prior?.appliesThroughTurnId ?? null,
   };
 }
 
@@ -134,8 +153,8 @@ export function AssistantWorkspace({
   adapter: providedAdapter,
   repository: providedRepository,
 }: AssistantWorkspaceProps) {
-  const adapter = useMemo(
-    () => providedAdapter ?? new BrowserLanguageModelAdapter(),
+  const controller = useMemo(
+    () => new ModelController(providedAdapter ? [providedAdapter] : null),
     [providedAdapter],
   );
   const repository = useMemo(
@@ -163,6 +182,11 @@ export function AssistantWorkspace({
   const [media, setMedia] = useState<MediaPart[]>([]);
   const [capabilities, setCapabilities] = useState<MediaCapability | null>(null);
   const [setupPending, setSetupPending] = useState(false);
+  const [modelDialog, setModelDialog] = useState<{
+    modelKey: ModelKey;
+    phase: "confirm" | "working";
+  } | null>(null);
+  const [modelManagerOpen, setModelManagerOpen] = useState(false);
   const [sessions, setSessions] = useState<SessionListSnapshot>(emptySessions);
   const [conversation, setConversation] = useState<ConversationSnapshot | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<SessionId | null>(null);
@@ -175,6 +199,7 @@ export function AssistantWorkspace({
   const composerRef = useRef<ComposerHandle>(null);
   const dragDepthRef = useRef(0);
   const setupRef = useRef<AbortController | null>(null);
+  const pendingRequestRef = useRef<PendingModelRequest | null>(null);
   const mountedRef = useRef(true);
   const selectedSessionIdRef = useRef<SessionId | null>(null);
   const [dropActive, setDropActive] = useState(false);
@@ -209,163 +234,114 @@ export function AssistantWorkspace({
     [repository, syncStorageMode],
   );
 
-  const recheckAvailability = useCallback(async (): Promise<void> => {
+  const publishModelSnapshot = useCallback(
+    (snapshot = controller.getSnapshot()): void => {
+      dispatch({
+        type: "models/discovered",
+        options: snapshot.options,
+        selectedModelKey: snapshot.selectedModelKey,
+        activeModelKey: snapshot.activeModelKey,
+        pendingModelKey: snapshot.pendingModelKey,
+      });
+    },
+    [controller],
+  );
+
+  useEffect(
+    () => controller.subscribe((snapshot) => {
+      if (snapshot.options.length > 0) publishModelSnapshot(snapshot);
+    }),
+    [controller, publishModelSnapshot],
+  );
+
+  useEffect(() => controller.observeAssetInvalidation(), [controller]);
+
+  const recheckAvailability = useCallback(async (
+    currentConversation: ConversationSnapshot | null,
+  ): Promise<void> => {
     setupRef.current?.abort();
     setupRef.current = null;
     setSetupPending(false);
-    dispatch({ type: "environment/checking" });
+    dispatch({ type: "models/checking" });
     try {
-      const availability = await adapter.availability();
-      if (mountedRef.current) {
-        if (availability.state !== "available") sessionCache.clear();
-        if (availability.state === "available") {
-          const snapshot = await adapter.capabilities?.();
-          setCapabilities(
-            snapshot ?? {
-              text: true,
-              image: false,
-              audio: false,
-              observedAt: Date.now(),
-              modelIdentity: null,
-              error: null,
-            },
-          );
-        } else {
-          setCapabilities(null);
+      const snapshot = await controller.discover();
+      const storedKey = currentConversation?.session.activeModelKey ?? null;
+      const stored = storedKey
+        ? snapshot.options.find((option) => option.descriptor.key === storedKey) ?? null
+        : null;
+      if (stored?.asset.state === "ready") {
+        controller.select(stored.descriptor.key);
+        controller.activate(stored.descriptor.key);
+      } else if (currentConversation && !currentConversation.session.requiresExplicitReplacement) {
+        const replacement = snapshot.options.find(
+          (option) => option.asset.state === "ready" && option.descriptor.key !== storedKey,
+        );
+        if (replacement) {
+          const activated = await repository.activateReopenFallback({
+            at: Date.now(),
+            descriptor: replacement.descriptor,
+            expectedActiveModelKey: currentConversation.session.activeModelKey,
+            expectedActiveRevision: currentConversation.session.activeModelRevision,
+            sessionId: currentConversation.session.id,
+          });
+          const winner = await repository.getConversation(currentConversation.session.id);
+          if (winner) setConversation(winner);
+          if (activated.ok || winner?.session.activeModelKey === replacement.descriptor.key) {
+            controller.activate(replacement.descriptor.key);
+          }
+        } else if (stored) {
+          controller.select(stored.descriptor.key);
         }
-        dispatch({ type: "environment/availability", availability });
+      } else if (!currentConversation && snapshot.options[0]?.asset.state === "ready") {
+        controller.activate(snapshot.options[0].descriptor.key);
+      } else if (stored) {
+        controller.select(stored.descriptor.key);
       }
+      publishModelSnapshot();
     } catch (error) {
       sessionCache.clear();
       setCapabilities(null);
-      if (mountedRef.current) {
-        dispatch({ type: "environment/failed", code: errorCode(error) });
-      }
+      if (mountedRef.current) dispatch({ type: "models/failed", code: errorCode(error) });
     }
-  }, [adapter, sessionCache]);
+  }, [controller, publishModelSnapshot, repository, sessionCache]);
 
-  const prepareModel = useCallback((): void => {
-    const abort = new AbortController();
-    const identity = modelSessionIdentity(conversation, personality.revision);
-    setupRef.current?.abort();
-    sessionCache.clear();
-    setupRef.current = abort;
-    setSetupPending(true);
-    dispatch({ type: "environment/progress", fraction: null });
-
-    const creation = adapter.create(
-      buildReconstructionPrompts({ conversation, personality }),
-      abort.signal,
-      (progress) => {
-        if (abort.signal.aborted || setupRef.current !== abort) return;
-        if (progress.state === "preparing") {
-          dispatch({ type: "environment/preparing" });
-        } else {
-          dispatch({ type: "environment/progress", fraction: progress.fraction });
-        }
-      },
-    );
-
-    void creation
-      .then((session) => {
-        if (abort.signal.aborted || setupRef.current !== abort) {
-          session.destroy();
-          return;
-        }
-        setupRef.current = null;
-        setSetupPending(false);
-        sessionCache.store(identity, session);
-        void adapter.capabilities?.().then((snapshot) => {
-          if (mountedRef.current && setupRef.current === null) setCapabilities(snapshot ?? null);
-        });
-        dispatch({ type: "environment/ready" });
-      })
-      .catch(async (error) => {
-        if (setupRef.current === abort) {
-          setupRef.current = null;
-          setSetupPending(false);
-        }
-        if (!mountedRef.current || abort.signal.aborted) return;
-        try {
-          const availability = await adapter.availability();
-          if (!mountedRef.current) return;
-          if (availability.state === "downloading") {
-            dispatch({ type: "environment/availability", availability });
-            return;
-          }
-        } catch (availabilityError) {
-          if (mountedRef.current) {
-            dispatch({ type: "environment/failed", code: errorCode(availabilityError) });
-          }
-          return;
-        }
-        if (mountedRef.current) dispatch({ type: "environment/failed", code: errorCode(error) });
-      });
-  }, [adapter, conversation, personality, sessionCache]);
+  const selectedOption = state.models.options.find(
+    (option) => option.descriptor.key === state.models.selectedModelKey,
+  ) ?? null;
+  const activeModelKey = conversation?.session.activeModelKey ?? state.models.activeModelKey;
+  const activeOption = state.models.options.find(
+    (option) => option.descriptor.key === activeModelKey,
+  ) ?? null;
 
   useEffect(() => {
-    if (state.environment.status !== "downloading" || setupPending) return;
-    let active = true;
-    let checking = false;
-    let timer: number | null = null;
+    const modelAdapter = activeOption
+      ? controller.adapterFor(activeOption.descriptor.key)
+      : null;
+    if (!modelAdapter || activeOption?.asset.state !== "ready") {
+      setCapabilities(null);
+      return;
+    }
+    let current = true;
+    if (modelAdapter.capabilities) {
+      void modelAdapter.capabilities().then((snapshot) => {
+        if (current) setCapabilities(snapshot);
+      });
+    } else {
+      setCapabilities({
+        ...activeOption.descriptor.capabilities,
+        observedAt: Date.now(),
+        modelIdentity: modelAdapter.runtimeIdentity,
+        error: null,
+      });
+    }
+    return () => { current = false; };
+  }, [activeOption, controller]);
 
-    const schedule = (): void => {
-      if (!active) return;
-      timer = window.setTimeout(
-        () => void checkAvailability(),
-        MODEL_AVAILABILITY_POLL_INTERVAL_MS,
-      );
-    };
-
-    const checkAvailability = async (): Promise<void> => {
-      if (!active || checking) return;
-      checking = true;
-      try {
-        const availability = await adapter.availability();
-        if (!active) return;
-        if (availability.state === "downloading") {
-          schedule();
-        } else {
-          if (availability.state !== "available") sessionCache.clear();
-          if (availability.state === "available") {
-            const snapshot = await adapter.capabilities?.();
-            setCapabilities(
-              snapshot ?? {
-                text: true,
-                image: false,
-                audio: false,
-                observedAt: Date.now(),
-                modelIdentity: null,
-                error: null,
-              },
-            );
-          } else {
-            setCapabilities(null);
-          }
-          dispatch({ type: "environment/availability", availability });
-        }
-      } catch (error) {
-        if (active) dispatch({ type: "environment/failed", code: errorCode(error) });
-      } finally {
-        checking = false;
-      }
-    };
-
-    const checkWhenVisible = (): void => {
-      if (document.visibilityState !== "visible") return;
-      if (timer !== null) window.clearTimeout(timer);
-      timer = null;
-      void checkAvailability();
-    };
-
-    schedule();
-    document.addEventListener("visibilitychange", checkWhenVisible);
-    return () => {
-      active = false;
-      if (timer !== null) window.clearTimeout(timer);
-      document.removeEventListener("visibilitychange", checkWhenVisible);
-    };
-  }, [adapter, sessionCache, setupPending, state.environment.status]);
+  const prepareModel = useCallback((): void => {
+    if (selectedOption) {
+      setModelDialog({ modelKey: selectedOption.descriptor.key, phase: "confirm" });
+    }
+  }, [selectedOption]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -381,7 +357,6 @@ export function AssistantWorkspace({
         throw error;
       }
       if (!active) return;
-      await repository.markUnownedMediaTurns?.(Date.now());
       setSessions(initial.sessions);
       setSelectedSessionId(initial.sessions.activeSessionId);
       selectedSessionIdRef.current = initial.sessions.activeSessionId;
@@ -395,7 +370,9 @@ export function AssistantWorkspace({
         dispatch({ type: "storage/temporary", reason });
       });
 
-      if (active) await recheckAvailability();
+      if (active && !initial.sessions.activeSessionId) {
+        await recheckAvailability(null);
+      }
     }
 
     void initialize();
@@ -410,8 +387,9 @@ export function AssistantWorkspace({
       sessionCache.clear();
       unsubscribeSessions();
       repository.destroy();
+      controller.destroy();
     };
-  }, [mediaStore, recheckAvailability, repository, sessionCache]);
+  }, [controller, mediaStore, recheckAvailability, repository, sessionCache]);
 
   useEffect(() => {
     if (!selectedSessionId) {
@@ -419,8 +397,10 @@ export function AssistantWorkspace({
       return;
     }
     let active = true;
-    void repository.getConversation(selectedSessionId).then((snapshot) => {
-      if (active) setConversation(snapshot);
+    void repository.getConversation(selectedSessionId).then(async (snapshot) => {
+      if (!active) return;
+      setConversation(snapshot);
+      await recheckAvailability(snapshot);
     });
     const unsubscribe = repository.subscribeConversation(
       selectedSessionId,
@@ -435,13 +415,26 @@ export function AssistantWorkspace({
       active = false;
       unsubscribe();
     };
-  }, [repository, selectedSessionId]);
+  }, [recheckAvailability, repository, selectedSessionId]);
 
   useEffect(() => {
+    const key = conversation?.session.activeModelKey ?? state.models.activeModelKey;
+    const modelAdapter = key ? controller.adapterFor(key) : null;
+    if (!key || !modelAdapter) {
+      sessionCache.clear();
+      return;
+    }
     sessionCache.invalidateUnless(
-      modelSessionIdentity(conversation, personality.revision),
+      modelSessionIdentity(conversation, personality.revision, key, modelAdapter.runtimeIdentity),
     );
-  }, [conversation, personality.revision, sessionCache]);
+    const option = state.models.options.find((candidate) => candidate.descriptor.key === key);
+    const controllerSnapshot = controller.getSnapshot();
+    if (option?.asset.state === "ready" && controllerSnapshot.activeModelKey !== key) {
+      controller.activate(key);
+    } else if (controllerSnapshot.selectedModelKey !== key) {
+      controller.select(key);
+    }
+  }, [conversation, controller, personality.revision, sessionCache, state.models.activeModelKey, state.models.options]);
 
   const processOneTurn = useCallback(
     async (sessionId: SessionId, epoch: number): Promise<boolean> => {
@@ -454,6 +447,25 @@ export function AssistantWorkspace({
         ownerWindowId: mediaStore.ownerWindowId,
       });
       if (!claimed) return false;
+
+      const turnAdapter = controller.adapterFor(claimed.turn.modelKey);
+      if (
+        !turnAdapter ||
+        turnAdapter.runtimeIdentity !== claimed.turn.modelRuntimeIdentity
+      ) {
+        await repository.finishTurn({
+          at: Date.now(),
+          attemptId,
+          epoch,
+          failureCode: "model_unavailable",
+          sessionId,
+          status: "failed",
+          text: "",
+          turnId: claimed.turnId,
+        });
+        dispatch({ type: "work/failed", code: "model_unavailable" });
+        return true;
+      }
 
       dispatch({ type: "work/checking-context", turnId: claimed.turnId });
       const abort = new AbortController();
@@ -472,10 +484,9 @@ export function AssistantWorkspace({
       activeRef.current = active;
 
       try {
-        const currentAvailability = await adapter.availability();
+        const currentAvailability = await turnAdapter.availability();
         if (currentAvailability.state !== "available") {
           sessionCache.clear();
-          dispatch({ type: "environment/availability", availability: currentAvailability });
           throw new Error("model_unavailable");
         }
         let latestConversation = await repository.getConversation(sessionId);
@@ -492,7 +503,7 @@ export function AssistantWorkspace({
           throw new Error("media_rehydration_required");
         }
         if (mediaParts && mediaParts.length > 0) {
-          const capability = await adapter.capabilities?.();
+          const capability = await turnAdapter.capabilities?.();
           if (
             !capability ||
             !capability.text ||
@@ -505,11 +516,13 @@ export function AssistantWorkspace({
         const identity = modelSessionIdentity(
           latestConversation,
           currentPersonality.revision,
+          claimed.turn.modelKey,
+          claimed.turn.modelRuntimeIdentity,
         );
         if (mediaParts && mediaParts.length > 0) sessionCache.clear();
         let modelSession = mediaParts && mediaParts.length > 0 ? null : sessionCache.take(identity);
         if (!modelSession) {
-          modelSession = await adapter.create(
+          modelSession = await turnAdapter.create(
             buildReconstructionPrompts({
               conversation: latestConversation,
               personality: currentPersonality,
@@ -553,15 +566,14 @@ export function AssistantWorkspace({
           ...projected,
           overflowed: active.overflowed,
         });
-        const hasOlderTurns =
-          partitionCompletedTurns(latestConversation.turns).summaryTurns.length > 0;
+        const hasOlderTurns = completedConversationTurns(latestConversation.turns).length > 1;
         if ((assessment.shouldCompact || assessment.blocked) && hasOlderTurns) {
           dispatch({ type: "work/compacting", turnId: claimed.turnId });
           active.unsubscribeOverflow();
           modelSession.destroy();
           active.session = null;
           const compacted = await compactConversation({
-            adapter,
+            adapter: turnAdapter,
             conversation: latestConversation,
             personality: currentPersonality,
             repository,
@@ -596,7 +608,6 @@ export function AssistantWorkspace({
           throw new Error("context_too_large");
         }
 
-        dispatch({ type: "environment/ready" });
         dispatch({ type: "work/generating", turnId: claimed.turnId, hasContent: false });
 
         let lastCheckpointAt = 0;
@@ -658,7 +669,12 @@ export function AssistantWorkspace({
           activeRef.current === active
         ) {
           sessionCache.store(
-            modelSessionIdentity(completedConversation, currentPersonality.revision),
+            modelSessionIdentity(
+              completedConversation,
+              currentPersonality.revision,
+              claimed.turn.modelKey,
+              claimed.turn.modelRuntimeIdentity,
+            ),
             modelSession,
           );
           active.session = null;
@@ -717,7 +733,7 @@ export function AssistantWorkspace({
       }
       return true;
     },
-    [adapter, mediaStore, persistContextMeasurement, repository, sessionCache, syncStorageMode],
+    [controller, mediaStore, persistContextMeasurement, repository, sessionCache, syncStorageMode],
   );
 
   const processAcceptedTurn = useCallback(
@@ -744,13 +760,33 @@ export function AssistantWorkspace({
   const submit = useCallback(
     async (text: string, submittedMedia: MediaPart[] = media): Promise<ReturnType<typeof toSubmissionId> | null> => {
       const submissionId = toSubmissionId(uuid());
+      const submissionModelKey =
+        conversation?.session.activeModelKey ??
+        state.models.activeModelKey ??
+        state.models.selectedModelKey;
+      const submissionOption = state.models.options.find(
+        (option) => option.descriptor.key === submissionModelKey,
+      );
+      const submissionAdapter = submissionModelKey
+        ? controller.adapterFor(submissionModelKey)
+        : null;
+      if (
+        !submissionModelKey ||
+        !submissionOption ||
+        submissionOption.asset.state !== "ready" ||
+        !submissionAdapter ||
+        conversation?.session.requiresExplicitReplacement
+      ) {
+        dispatch({ type: "work/failed", code: "model_unavailable" });
+        return null;
+      }
       const staged = submittedMedia.length > 0
         ? mediaStore.stage(submissionId, submittedMedia)
         : null;
       try {
         if (staged) {
-          const availability = await adapter.availability();
-          const capability = await adapter.capabilities?.();
+          const availability = await submissionAdapter.availability();
+          const capability = await submissionAdapter.capabilities?.();
           if (
             availability.state !== "available" ||
             !capability ||
@@ -768,6 +804,11 @@ export function AssistantWorkspace({
           sessionId: selectedSessionId,
           submissionId,
           text,
+          model: {
+            key: submissionModelKey,
+            revision: conversation?.session.activeModelRevision ?? 0,
+            runtimeIdentity: submissionAdapter.runtimeIdentity,
+          },
           media: staged
             ? {
                 kinds: staged.parts.map((part) => part.kind),
@@ -797,7 +838,7 @@ export function AssistantWorkspace({
         return null;
       }
     },
-    [adapter, media, mediaStore, processAcceptedTurn, repository, selectedSessionId],
+    [controller, conversation, media, mediaStore, processAcceptedTurn, repository, selectedSessionId, state.models.activeModelKey, state.models.options, state.models.selectedModelKey],
   );
 
   const compactCurrentConversation = useCallback(async (): Promise<void> => {
@@ -806,15 +847,22 @@ export function AssistantWorkspace({
       const latestConversation = await repository.getConversation(selectedSessionId);
       if (
         !latestConversation ||
-        partitionCompletedTurns(latestConversation.turns).summaryTurns.length === 0
+        completedConversationTurns(latestConversation.turns).length < 2
       ) {
         return;
       }
       dispatch({ type: "work/compacting", turnId: null });
       sessionCache.clear();
       const currentPersonality = (await repository.getSettings()).personality;
+      const compactingAdapter = controller.adapterFor(
+        latestConversation.session.activeModelKey,
+      );
+      if (!compactingAdapter) {
+        dispatch({ type: "work/failed", code: "model_unavailable" });
+        return;
+      }
       const result = await compactConversation({
-        adapter,
+        adapter: compactingAdapter,
         conversation: latestConversation,
         personality: currentPersonality,
         repository,
@@ -828,7 +876,12 @@ export function AssistantWorkspace({
           selectedSessionIdRef.current === selectedSessionId
         ) {
           sessionCache.store(
-            modelSessionIdentity(updatedConversation, currentPersonality.revision),
+            modelSessionIdentity(
+              updatedConversation,
+              currentPersonality.revision,
+              compactingAdapter.descriptor.key,
+              compactingAdapter.runtimeIdentity,
+            ),
             result.session,
           );
         } else {
@@ -848,7 +901,299 @@ export function AssistantWorkspace({
     } else {
       await run();
     }
-  }, [adapter, repository, selectedSessionId, sessionCache, syncStorageMode]);
+  }, [controller, repository, selectedSessionId, sessionCache, syncStorageMode]);
+
+  const requestModelChoice = useCallback((modelKey: ModelKey): void => {
+    const busy =
+      state.work.status === "queued" ||
+      state.work.status === "checking_context" ||
+      state.work.status === "compacting" ||
+      state.work.status === "generating";
+    if (busy || setupPending) return;
+    const option = state.models.options.find(
+      (candidate) => candidate.descriptor.key === modelKey,
+    );
+    if (!option) return;
+    if (
+      modelKey === conversation?.session.activeModelKey &&
+      !conversation.session.requiresExplicitReplacement &&
+      option.asset.state === "ready"
+    ) return;
+    controller.select(modelKey);
+    setModelDialog({ modelKey, phase: "confirm" });
+  }, [controller, conversation, setupPending, state.models.options, state.work.status]);
+
+  const confirmModelChoice = useCallback(async (): Promise<void> => {
+    if (!modelDialog) return;
+    const option = state.models.options.find(
+      (candidate) => candidate.descriptor.key === modelDialog.modelKey,
+    );
+    const targetAdapter = option
+      ? controller.adapterFor(option.descriptor.key)
+      : null;
+    if (!option || !targetAdapter) return;
+
+    const abort = new AbortController();
+    setupRef.current?.abort();
+    setupRef.current = abort;
+    setSetupPending(true);
+    setModelDialog({ modelKey: option.descriptor.key, phase: "working" });
+    sessionCache.clear();
+
+    let pending: PendingModelRequest | null = null;
+    let pendingSessionId: SessionId | null = null;
+    try {
+      const latest = selectedSessionId
+        ? await repository.getConversation(selectedSessionId)
+        : null;
+      if (latest) {
+        const confirmed = await repository.confirmModelRequest({
+          at: Date.now(),
+          ownerWindowId: mediaStore.ownerWindowId,
+          reason: "visitor",
+          requestId: uuid(),
+          sessionId: latest.session.id,
+          targetModelKey: option.descriptor.key,
+        });
+        if (!confirmed.ok) {
+          if (confirmed.code === "chat_busy") {
+            dispatch({ type: "work/failed", code: "operation_failed" });
+          }
+          throw new Error(confirmed.code);
+        }
+        if (!confirmed.request && option.asset.state === "ready") {
+          controller.activate(option.descriptor.key);
+          setModelDialog(null);
+          return;
+        }
+        pending = confirmed.request;
+        pendingSessionId = latest.session.id;
+        pendingRequestRef.current = pending;
+        controller.setPending(option.descriptor.key);
+      }
+
+      const prompts = buildReconstructionPrompts({
+        conversation: latest,
+        personality,
+      });
+      let packed: Awaited<ReturnType<typeof packTargetContext>> | null = null;
+      let switchSummary: Awaited<ReturnType<typeof createSwitchCompactionCandidate>> = null;
+      let candidate: LocalModelSession;
+      if (latest && pending) {
+        const sourceDescriptor = modelDescriptor(latest.session.activeModelKey);
+        const sourceAdapter = controller.adapterFor(latest.session.activeModelKey);
+        if (
+          sourceDescriptor &&
+          sourceAdapter &&
+          option.descriptor.rank > sourceDescriptor.rank
+        ) {
+          await repository.updateModelRequest({
+            requestId: pending.requestId,
+            revision: pending.revision,
+            sessionId: latest.session.id,
+            status: "compacting",
+          });
+          switchSummary = await createSwitchCompactionCandidate({
+            adapter: sourceAdapter,
+            conversation: latest,
+            signal: abort.signal,
+          });
+        }
+        await repository.updateModelRequest({
+          requestId: pending.requestId,
+          revision: pending.revision,
+          sessionId: latest.session.id,
+          status: "checking",
+        });
+        const measuringSession = await controller.prepare(
+          option.descriptor.key,
+          [],
+          abort.signal,
+        );
+        try {
+          packed = await packTargetContext({
+            conversation: latest,
+            measure: (candidatePrompts) => measuringSession.measure(candidatePrompts, abort.signal),
+            outputAllowance:
+              option.descriptor.kind === "portable"
+                ? PORTABLE_OUTPUT_TOKEN_ALLOWANCE
+                : 0,
+            personality,
+            summaryCandidate: switchSummary
+              ? {
+                  appliesThroughTurnId: switchSummary.appliesThroughTurnId,
+                  text: switchSummary.text,
+                }
+              : null,
+          });
+        } finally {
+          measuringSession.destroy();
+        }
+        candidate = await controller.prepare(
+          option.descriptor.key,
+          packed.prompts,
+          abort.signal,
+        );
+      } else {
+        candidate = await controller.prepare(
+          option.descriptor.key,
+          prompts,
+          abort.signal,
+        );
+      }
+      if (abort.signal.aborted || setupRef.current !== abort) {
+        candidate.destroy();
+        return;
+      }
+
+      if (!latest || !pending) {
+        controller.activate(option.descriptor.key);
+        sessionCache.store(
+          modelSessionIdentity(
+            null,
+            personality.revision,
+            option.descriptor.key,
+            targetAdapter.runtimeIdentity,
+          ),
+          candidate,
+        );
+      } else {
+        await repository.updateModelRequest({
+          requestId: pending.requestId,
+          revision: pending.revision,
+          sessionId: latest.session.id,
+          status: "ready_to_commit",
+        });
+        const measured = packed?.measurement ?? candidate.context();
+        const candidateContext: ContextState = {
+          sessionId: latest.session.id,
+          epoch: latest.session.epoch,
+          state:
+            packed &&
+            (packed.summaryUsed ||
+              packed.directTurnIds.length < completedConversationTurns(latest.turns).length)
+              ? "compacted"
+              : "fresh",
+          summaryText: packed?.summaryUsed ? switchSummary?.text ?? null : null,
+          summarizedThroughTurnId: packed?.summaryUsed
+            ? switchSummary?.appliesThroughTurnId ?? null
+            : null,
+          directFromTurnId: packed?.directTurnIds[0] ?? null,
+          contextUsage: measured.usage,
+          contextWindow: measured.window,
+          promptVersion: option.descriptor.promptVersion,
+          sourceHistoryRevision: latest.session.historyRevision,
+          personalityRevision: personality.revision,
+          compactedAt: packed?.summaryUsed ? Date.now() : null,
+          overflowedAt: null,
+          modelKey: option.descriptor.key,
+          modelRevision: pending.revision,
+          generatedByModelKey: packed?.summaryUsed
+            ? switchSummary?.generatedByModelKey ?? null
+            : null,
+          appliesThroughTurnId: packed?.summaryUsed
+            ? switchSummary?.appliesThroughTurnId ?? null
+            : null,
+        };
+        const activated = await repository.activateModelRequest({
+          at: Date.now(),
+          context: candidateContext,
+          descriptor: option.descriptor,
+          expectedEpoch: pending.capturedEpoch,
+          expectedHistoryRevision: pending.capturedHistoryRevision,
+          ownerWindowId: mediaStore.ownerWindowId,
+          requestId: pending.requestId,
+          revision: pending.revision,
+          sessionId: latest.session.id,
+        });
+        if (!activated.ok) {
+          candidate.destroy();
+          throw new Error(activated.code);
+        }
+        const updated = await repository.getConversation(latest.session.id);
+        if (!updated) {
+          candidate.destroy();
+          throw new Error("session_deleted");
+        }
+        controller.activate(option.descriptor.key);
+        sessionCache.store(
+          modelSessionIdentity(
+            updated,
+            personality.revision,
+            option.descriptor.key,
+            targetAdapter.runtimeIdentity,
+          ),
+          candidate,
+        );
+        setConversation(updated);
+      }
+      pendingRequestRef.current = null;
+      setModelDialog(null);
+    } catch (error) {
+      const superseded =
+        error instanceof Error &&
+        (error.message === "model_request_stale" || error.message === "revision_conflict");
+      if (pending && pendingSessionId) {
+        await repository.cancelModelRequest({
+          requestId: pending.requestId,
+          revision: pending.revision,
+          sessionId: pendingSessionId,
+        });
+      }
+      pendingRequestRef.current = null;
+      controller.setPending(null);
+      if (pendingSessionId) {
+        const current = await repository.getConversation(pendingSessionId);
+        if (current) controller.select(current.session.activeModelKey);
+      }
+      if (superseded) {
+        setModelDialog(null);
+        dispatch({ type: "work/idle" });
+      } else if (!abort.signal.aborted) {
+        dispatch({ type: "work/failed", code: errorCode(error) });
+      }
+    } finally {
+      if (setupRef.current === abort) setupRef.current = null;
+      setSetupPending(false);
+    }
+  }, [controller, mediaStore.ownerWindowId, modelDialog, personality, repository, selectedSessionId, sessionCache, state.models.options]);
+
+  const stopModelPreparation = useCallback((): void => {
+    const pending = pendingRequestRef.current;
+    const setup = setupRef.current;
+    setupRef.current = null;
+    setSetupPending(false);
+    setup?.abort();
+    if (modelDialog) controller.stopWaiting(modelDialog.modelKey);
+    controller.setPending(null);
+    pendingRequestRef.current = null;
+    if (pending && selectedSessionId) {
+      void repository.cancelModelRequest({
+        requestId: pending.requestId,
+        revision: pending.revision,
+        sessionId: selectedSessionId,
+      });
+    }
+    setModelDialog(null);
+  }, [controller, modelDialog, repository, selectedSessionId]);
+
+  const removeModel = useCallback(async (modelKey: ModelKey): Promise<void> => {
+    if (setupPending) stopModelPreparation();
+    if (activeRef.current?.session?.modelKey === modelKey) {
+      activeRef.current.abort.abort();
+      activeRef.current.session.destroy();
+    }
+    sessionCache.clear();
+    try {
+      await repository.markModelRemoved(modelKey, Date.now());
+      await controller.remove(modelKey);
+      if (conversation?.session.activeModelKey === modelKey) {
+        setConversation(await repository.getConversation(conversation.session.id));
+      }
+    } catch (error) {
+      dispatch({ type: "models/failed", code: errorCode(error) });
+    }
+  }, [controller, conversation, repository, sessionCache, setupPending, stopModelPreparation]);
 
   const savePersonality = useCallback(
     async (text: string) => {
@@ -882,6 +1227,8 @@ export function AssistantWorkspace({
     setConversation(null);
     setDraft("");
     setMedia([]);
+    const strongest = controller.getSnapshot().options[0];
+    if (strongest) controller.chooseDraft(strongest.descriptor.key);
     dispatch({ type: "work/idle" });
     void repository.selectSession(null, Date.now());
   }
@@ -922,6 +1269,23 @@ export function AssistantWorkspace({
     void submit(message.text, retryMedia ?? []).then((submissionId) => {
       if (submissionId && hasMedia) mediaStore.release(turn.submissionId, "replaced");
     });
+  }
+
+  async function recover(turnId: TurnId): Promise<void> {
+    if (!conversation) return;
+    const turn = conversation.turns.find((candidate) => candidate.id === turnId);
+    if (!turn || (turn.status !== "queued" && turn.status !== "generating")) return;
+    const result = await repository.recoverTurn({
+      at: Date.now(),
+      epoch: turn.epoch,
+      expectedAttemptId: turn.generationAttemptId,
+      sessionId: turn.sessionId,
+      turnId,
+    });
+    if (!result.ok) return;
+    sessionCache.clear();
+    setConversation(await repository.getConversation(turn.sessionId));
+    await processAcceptedTurn(turn.sessionId, turn.epoch);
   }
 
   async function confirmDestructiveAction(): Promise<void> {
@@ -965,7 +1329,9 @@ export function AssistantWorkspace({
     });
   }
 
-  const ready = state.environment.status === "ready";
+  const ready =
+    activeOption?.asset.state === "ready" &&
+    !conversation?.session.requiresExplicitReplacement;
   const workBusy =
     state.work.status === "queued" ||
     state.work.status === "checking_context" ||
@@ -1023,7 +1389,7 @@ export function AssistantWorkspace({
         canCompact={
           state.work.status !== "generating" &&
           state.work.status !== "compacting" &&
-          partitionCompletedTurns(conversation?.turns ?? []).summaryTurns.length > 0
+          completedConversationTurns(conversation?.turns ?? []).length > 1
         }
         conversation={conversation}
         onClearAll={() => setConfirmation({ kind: "clear" })}
@@ -1049,8 +1415,23 @@ export function AssistantWorkspace({
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
+        <ModelSelector
+          busy={workBusy || setupPending}
+          onManage={() => setModelManagerOpen(true)}
+          onSelect={requestModelChoice}
+          options={state.models.options}
+          selectedModelKey={state.models.selectedModelKey}
+        />
         <Transcript
+          activeTurnId={
+            state.work.status === "queued" ||
+            state.work.status === "checking_context" ||
+            state.work.status === "generating"
+              ? state.work.turnId
+              : null
+          }
           conversation={conversation}
+          onRecover={(turnId) => void recover(turnId)}
           onRetry={retry}
           temporary={repository.mode() === "temporary"}
         />
@@ -1065,10 +1446,16 @@ export function AssistantWorkspace({
                 ? "Generation did not proceed with verified full context. Compact this chat, shorten the prompt, or start a new chat."
                 : state.work.code === "media_rehydration_required"
                   ? "This attachment is no longer available in this page. Reattach it to analyze it again."
-                  : state.work.code === "media_unavailable"
+                : state.work.code === "media_unavailable"
                     ? "The current local model no longer accepts that attachment. Remove it or prepare a model with the required capability."
                 : state.work.code === "output_filtered"
-                  ? "Chrome did not return that response, possibly because its built-in safety checks blocked the output. Rephrase the prompt or start a new chat."
+                  ? "The local model did not return that response. Rephrase the prompt or start a new chat."
+                  : state.work.code === "resource_exhausted"
+                    ? "This device could not keep the model running. Close other heavy pages or choose a smaller model."
+                    : state.work.code === "runtime_terminated"
+                      ? "The browser stopped the local model. Retry the response when ready."
+                      : state.work.code === "storage_quota"
+                        ? "The browser could not store the model. Free browser storage, then retry preparation."
                   : "The local assistant could not complete that response. Retry it, edit the prompt, or start a new chat."}
             </p>
           ) : null}
@@ -1089,16 +1476,12 @@ export function AssistantWorkspace({
             />
           ) : (
             <AvailabilityPanel
-              environment={state.environment}
+              catalog={state.models}
               onPrepare={prepareModel}
-              onRetry={() => void recheckAvailability()}
-              onStopWaiting={() => {
-                const setup = setupRef.current;
-                setupRef.current = null;
-                setSetupPending(false);
-                setup?.abort();
-                dispatch({ type: "environment/failed", code: "aborted" });
-              }}
+              onRetry={() => void recheckAvailability(conversation)}
+              onStopWaiting={stopModelPreparation}
+              option={selectedOption}
+              requiresExplicitReplacement={conversation?.session.requiresExplicitReplacement}
             />
           )}
           <p className="mx-auto mt-3 max-w-2xl text-center text-[0.68rem] leading-5 text-zinc-600 dark:text-zinc-400">
@@ -1126,7 +1509,7 @@ export function AssistantWorkspace({
         confirmLabel={confirmation?.kind === "clear" ? "Clear everything" : "Delete chat"}
         description={
           confirmation?.kind === "clear"
-            ? "This removes every local chat, generated response, context summary, and personality preference from this browser. It cannot be undone."
+            ? "This removes every local chat, generated response, context summary, model boundary, pending choice, and personality preference from this browser. Downloaded local models stay installed. It cannot be undone."
             : `This removes only “${confirmation?.kind === "delete" ? confirmation.title : "this chat"}” from this browser. Your other chats and personality preference stay intact.`
         }
         onClose={() => setConfirmation(null)}
@@ -1137,6 +1520,37 @@ export function AssistantWorkspace({
             ? "Clear all local assistant data?"
             : `Delete ${confirmation?.kind === "delete" ? confirmation.title : "this chat"}?`
         }
+      />
+      {modelDialog ? (
+        <ModelPreparationDialog
+          descriptor={
+            modelDescriptor(modelDialog.modelKey) ??
+            state.models.options.find((option) => option.descriptor.key === modelDialog.modelKey)!.descriptor
+          }
+          onClose={() => setModelDialog(null)}
+          onConfirm={() => void confirmModelChoice()}
+          onStop={stopModelPreparation}
+          open
+          downgrade={
+            conversation !== null &&
+            (modelDescriptor(conversation.session.activeModelKey)?.rank ?? 0) <
+              (modelDescriptor(modelDialog.modelKey)?.rank ?? 0)
+          }
+          requiresPreparation={
+            state.models.options.find((option) => option.descriptor.key === modelDialog.modelKey)?.asset.state !== "ready"
+          }
+          snapshot={
+            modelDialog.phase === "working"
+              ? state.models.options.find((option) => option.descriptor.key === modelDialog.modelKey)?.asset ?? null
+              : null
+          }
+        />
+      ) : null}
+      <ModelManager
+        onClose={() => setModelManagerOpen(false)}
+        onRemove={(modelKey) => void removeModel(modelKey)}
+        open={modelManagerOpen}
+        options={state.models.options}
       />
     </>
   );
