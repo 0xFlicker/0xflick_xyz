@@ -12,7 +12,7 @@ Status: implemented editorial direction
 
 ## Positioning
 
-> Principal Architect at GIPHY and creator of The House.
+> Principal Architect and hands-on engineer building AI systems, developer tools, and games.
 
 The site is designed for Principal Software Engineer, Principal Architect, Principal AI Platform Engineer, Staff+ AI Systems Engineer, Developer Platform Architect, Applied AI / Agent Infrastructure Engineer, and hands-on architecture leadership roles.
 
@@ -30,15 +30,18 @@ John is not positioned as a model researcher, pure people manager, consultant, c
 
 The Principal title begins at GIPHY in 2024. The two Shutterstock tenures remain visibly separate. Verta and Sandbox VR did not use formal titles for these roles, so `src/lib/career.ts` records employee number and actual ownership instead of manufacturing title history.
 
-## Evidence order
+## Page purposes
 
-1. The House / Influence as current hands-on applied-AI and platform proof
-2. Named GIPHY Principal scope
-3. Shutterstock Create and Shutterstock Editor as separate product chapters
-4. Verta product, frontend, delivery, and operational leadership
-5. Morpheus as a live cross-platform adventure game and modernization effort
-6. Selected open source spanning CaptEmulation and 0xFlicker
-7. A focused 0xFlicker / onchain archive
+- Home: a brief personal introduction and current-project preview. No salaried
+  employer names or summaries, including metadata, structured data and social image.
+- Work: things built or co-created. The House, Morpheus, Editor, Create, and
+  open-source tools. Describe the product and a specific contribution; link to
+  a playable release, source, design, or the relevant Experience entry. Do not
+  repeat job dates, titles, general duties or employer overviews here.
+- Experience: canonical employment chronology, titles, responsibilities and
+  outcomes, including GIPHY, Verta and both Shutterstock tenures.
+- About: personal background and career transitions, without another job list.
+- Connect: availability and contact actions.
 
 Web3 remains a meaningful distributed-systems chapter. It is not the headline or the whole career.
 
@@ -51,9 +54,9 @@ Web3 remains a meaningful distributed-systems chapter. It is not the headline or
 - No repeated architecture slogans standing in for facts
 - No generic confidentiality disclaimers or anonymous employers
 
-The homepage leads with a short introduction, The House, three employer work
-entries, and contact. Keep detailed chronology on Experience and the personal
-career story on About. Work holds project details, games, and open source.
+The homepage previews The House briefly and links to its fuller project entry.
+Employer summaries belong on Experience, not Home or Work. Product names on
+Work may include a company name when that is the name of the actual product.
 
 Keep the introduction factual and avoid architecture slogans.
 Remove public commentary about editorial rules and

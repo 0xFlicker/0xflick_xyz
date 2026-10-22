@@ -66,10 +66,6 @@ const personSchema = {
   alternateName: [brandName, publishingName, "CaptEmulation"],
   url: `${siteUrl}/`,
   jobTitle: professionalTitle,
-  worksFor: {
-    "@type": "Organization",
-    name: "GIPHY",
-  },
   alumniOf: {
     "@type": "CollegeOrUniversity",
     name: "The University of Texas at Austin",

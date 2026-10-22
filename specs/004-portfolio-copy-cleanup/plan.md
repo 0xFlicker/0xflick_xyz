@@ -17,9 +17,10 @@ I: Deliver a working editorial increment. II: Remove content and header scroll m
 Clean checkout verified before edits. All required quality gates and browser checks are included. Pre-design and post-design gates pass without exceptions.
 
 ## Project Structure
-- `src/components/PortfolioHome.tsx`: four sections with featured House and three employer entries.
-- `src/lib/portfolio.ts`: concise selected employer summaries; remove unused capability data.
+- `src/components/PortfolioHome.tsx`: brief introduction and current-project preview; no employer references.
+- `src/lib/portfolio.ts`: retained product IDs only; delete unused employer-summary data and career imports.
 - `src/components/Header.tsx`, `Footer.tsx`, `src/lib/navigation.ts`: plain header, shared primary links, secondary assistant link.
 - `src/app/~/about/page.tsx`, `~/projects/page.tsx`, `~/cv/page.tsx`, `connect/page.tsx`: subtract slogans, repeated prose and grids; retain factual detail and destinations.
-- `src/lib/site.ts`, `src/app/opengraph-image.tsx`, `docs/portfolio-positioning.md`: reconcile metadata and guidance with new copy.
+- `src/lib/site.ts`, `src/app/layout.tsx`, `src/app/opengraph-image.tsx`, `docs/portfolio-positioning.md`: remove employer names from homepage metadata/schema/social preview and reconcile guidance.
+- Work entries describe artifacts and specific contributions without job chronology/responsibility inventories. Experience retains canonical career data and responsibilities. No compatibility anchors for removed employer-only Work entries.
 - `specs/004-portfolio-copy-cleanup/`: specification and validation artifacts.

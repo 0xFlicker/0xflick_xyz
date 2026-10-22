@@ -35,3 +35,15 @@ Convergence: six functional requirements, four success criteria, seven acceptanc
 
 ## Follow-up copy correction
 The user requested removing the dry architecture sentence. Removed it without a replacement, reconciled the specification and editorial guidance, and reran lint, typecheck, content validation, five content tests, and production build successfully. Refreshed the local production preview and desktop/mobile screenshots; the sentence is absent and mobile has no horizontal overflow. This supersedes the earlier retained-sentence acceptance note. Completion audit against the updated acceptance criterion found no remaining work.
+
+## Distinct page purposes — latest user refinement
+This supersedes the earlier four-section homepage design and employer entries on Work.
+
+- Home now has two sections and 63 main-content words. Browser inspection of the complete homepage HTML found no salaried employer names, including metadata and structured data. Shared social image text and alt text were also updated in source.
+- Work contains The House, Morpheus, Editor, Create and six open-source projects. No employment date ranges, role titles, GIPHY entry or Verta entry. Removed career imports, metadata helper, evidence grids and employer-summary array.
+- Experience retains all nine canonical career records and all responsibility/outcome bullets. Both Shutterstock tenures remain separate. Product links land on the correct 2015 and 2022 career entries.
+- All five project-index anchors resolve. Home, Work and Experience pass desktop 1280×720 and mobile 390×844 overflow checks and visual review. Viewport override reset afterward.
+- Lint, typecheck, content validation, five content tests and production build passed. Same existing Transformers and Browserslist warnings; dependencies unchanged.
+- React review: static page data, Server Components, stable keys, no new effects, dependencies or persistence. Canonical career data unchanged.
+- Spec Kit analysis: revised requirements covered by T009–T012, no ambiguities or constitution conflicts. Completion audit of the revised spec, plan and tasks found no remaining gaps; no convergence tasks added.
+- Screenshot: `output/portfolio-cleanup/home-distinct-desktop.jpg`. Local preview refreshed; no deployment.

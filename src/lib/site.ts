@@ -9,7 +9,7 @@ export const professionalTitle = "Principal Architect";
 export const siteTitle = `${siteName} — ${professionalTitle}`;
 
 export const siteDescription =
-  "John Dean / Flick, Principal Architect at GIPHY and creator of The House. Work across advertising systems, creative software, developer tools, and games.";
+  "John Dean / Flick, Principal Architect and hands-on engineer building AI systems, developer tools, and games. Creator of The House. Based in Colorado.";
 
 export const profileLinks = {
   github: "https://github.com/0xFlicker",
@@ -22,7 +22,7 @@ export const socialImage = {
   url: "/opengraph-image",
   width: 1200,
   height: 630,
-  alt: `${siteName}, ${professionalTitle} at GIPHY and creator of The House`,
+  alt: `${siteName}, ${professionalTitle} and creator of The House`,
 };
 
 export function createPageMetadata({

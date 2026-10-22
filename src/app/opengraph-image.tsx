@@ -14,7 +14,7 @@ const flickMarkUrl = new URL(
 ).toString();
 
 export const dynamic = "force-dynamic";
-export const alt = `${siteTitle} at GIPHY and creator of The House`;
+export const alt = `${siteTitle} and creator of The House`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -56,12 +56,12 @@ export default function OpenGraphImage() {
               marginTop: 34,
             }}
           >
-            Principal Architect at GIPHY. Creator of The House.
+            AI systems, developer tools, and games.
           </div>
           <div
             style={{ color: "#a1a1aa", fontSize: 25, marginTop: 36 }}
           >
-            Advertising systems · Creative software · Games
+            Creator of The House · Based in Colorado
           </div>
         </div>
         <div

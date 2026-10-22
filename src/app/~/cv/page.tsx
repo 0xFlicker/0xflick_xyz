@@ -24,7 +24,7 @@ function ExperienceCard({ role, index }: { role: CareerRole; index: number }) {
 
   return (
     <article
-      id={index === 0 ? "giphy" : undefined}
+      id={role.id}
       className="grid scroll-mt-24 gap-7 border-t border-zinc-200 py-10 dark:border-zinc-700/60 lg:grid-cols-[0.72fr_1.28fr] lg:gap-16"
     >
       <div>
@@ -86,7 +86,7 @@ export default function ExperiencePage() {
         <div className="mt-9 flex flex-wrap gap-4">
           <Button href="/connect">Discuss a role</Button>
           <Button variant="secondary" href="/~/projects">
-            View selected work
+            Explore products and tools
           </Button>
         </div>
       </header>
