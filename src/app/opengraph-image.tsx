@@ -14,7 +14,7 @@ const flickMarkUrl = new URL(
 ).toString();
 
 export const dynamic = "force-dynamic";
-export const alt = `${siteTitle} turning emerging platforms into production systems`;
+export const alt = `${siteTitle} at GIPHY and creator of The House`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -56,12 +56,12 @@ export default function OpenGraphImage() {
               marginTop: 34,
             }}
           >
-            Turning emerging platforms into production systems.
+            Principal Architect at GIPHY. Creator of The House.
           </div>
           <div
             style={{ color: "#a1a1aa", fontSize: 25, marginTop: 36 }}
           >
-            Production AI · Platforms · Distributed systems · Monetization
+            Advertising systems · Creative software · Games
           </div>
         </div>
         <div

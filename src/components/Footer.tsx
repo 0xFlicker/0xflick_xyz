@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { ContainerInner, ContainerOuter } from "@/components/Container";
 import { navigationItems } from "@/lib/navigation";
@@ -9,14 +10,14 @@ function NavLink({
   children,
 }: {
   href: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <Link
       href={href}
       target={href.startsWith("http") ? "_blank" : undefined}
       rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
-      className="transition hover:text-brand-dark dark:hover:text-brand-light-400"
+      className="rounded-sm underline-offset-4 outline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-dark dark:focus-visible:outline-brand-light"
     >
       {children}
     </Link>
@@ -26,24 +27,25 @@ function NavLink({
 export function Footer() {
   const footerLinks = [
     ...navigationItems,
+    { href: "/assistant", label: "Local AI assistant" },
     { href: profileLinks.github, label: "0xFlicker GitHub" },
     { href: profileLinks.originalGithub, label: "CaptEmulation GitHub" },
   ] as const;
 
   return (
-    <footer className="mt-32 flex-none">
+    <footer className="mt-20 flex-none">
       <ContainerOuter>
         <div className="border-t border-zinc-100 pb-16 pt-10 dark:border-zinc-700/40">
           <ContainerInner>
-            <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
-              <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">
+            <div className="flex flex-col items-start justify-between gap-6 lg:flex-row">
+              <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-zinc-600 dark:text-zinc-300">
                 {footerLinks.map((item) => (
                   <NavLink key={item.href} href={item.href}>
                     {item.label}
                   </NavLink>
                 ))}
-              </div>
-              <p className="text-sm text-zinc-800 dark:text-zinc-200">
+              </nav>
+              <p className="shrink-0 text-sm text-zinc-500 dark:text-zinc-400">
                 &copy; {new Date().getFullYear()} {siteName}
               </p>
             </div>

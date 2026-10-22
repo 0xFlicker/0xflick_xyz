@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -17,304 +17,75 @@ import avatarImage from "@/images/avatar.png";
 import { navigationItems } from "@/lib/navigation";
 import { siteName } from "@/lib/site";
 
-function CloseIcon(props: React.ComponentPropsWithoutRef<"svg">) {
+function CloseIcon(props: ComponentPropsWithoutRef<"svg">) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <path
-        d="m17.25 6.75-10.5 10.5M6.75 6.75l10.5 10.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="m17.25 6.75-10.5 10.5m0-10.5 10.5 10.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
-  );
-}
-
-function ChevronDownIcon(props: React.ComponentPropsWithoutRef<"svg">) {
-  return (
-    <svg viewBox="0 0 8 6" aria-hidden="true" {...props}>
-      <path
-        d="M1.75 1.75 4 4.25l2.25-2.5"
-        fill="none"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function MobileNavItem({
-  href,
-  children,
-}: {
-  href: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <li>
-      <PopoverButton as={Link} href={href} className="block py-2">
-        {children}
-      </PopoverButton>
-    </li>
-  );
-}
-
-function MobileNavigation(
-  props: React.ComponentPropsWithoutRef<typeof Popover>
-) {
-  return (
-    <Popover {...props}>
-      {({ open }) => (
-        <>
-          <PopoverButton className="group flex items-center rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20">
-            Menu
-            <ChevronDownIcon className="ml-3 h-auto w-2 stroke-zinc-500 group-hover:stroke-zinc-700 dark:group-hover:stroke-zinc-400" />
-          </PopoverButton>
-          <PopoverBackdrop
-            transition
-            className="fixed inset-0 z-50 bg-zinc-800/40 backdrop-blur-sm duration-150 data-[closed]:opacity-0 data-[enter]:ease-out data-[leave]:ease-in dark:bg-black/80"
-          />
-          {open && (
-            <PopoverPanel
-              static
-              focus
-              transition
-              className="fixed inset-x-4 top-8 z-50 origin-top rounded-3xl bg-white p-8 ring-1 ring-zinc-900/5 duration-150 data-[closed]:scale-95 data-[closed]:opacity-0 data-[enter]:ease-out data-[leave]:ease-in dark:bg-zinc-900 dark:ring-zinc-800"
-            >
-              {({ close }) => (
-                <>
-                  <div className="flex flex-row-reverse items-center justify-between">
-                    <PopoverButton
-                      aria-label="Close menu"
-                      className="-m-1 p-1"
-                      onClick={() => {
-                        close();
-                      }}
-                    >
-                      <CloseIcon className="h-6 w-6 text-zinc-500 dark:text-zinc-400" />
-                    </PopoverButton>
-                    <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                      Navigation
-                    </h2>
-                  </div>
-                  <nav className="mt-6">
-                    <ul className="-my-2 divide-y divide-zinc-100 text-base text-zinc-800 dark:divide-zinc-100/5 dark:text-zinc-300">
-                      {navigationItems.map((item) => (
-                        <MobileNavItem key={item.href} href={item.href}>
-                          {item.label}
-                        </MobileNavItem>
-                      ))}
-                    </ul>
-                  </nav>
-                </>
-              )}
-            </PopoverPanel>
-          )}
-        </>
-      )}
-    </Popover>
-  );
-}
-
-function NavItem({
-  href,
-  children,
-}: {
-  href: string;
-  children: React.ReactNode;
-}) {
-  let isActive = usePathname() === href;
-
-  return (
-    <li>
-      <Link
-        href={href}
-        className={clsx(
-          "relative block px-3 py-2 transition",
-          isActive
-            ? "text-brand-dark/40 dark:text-brand-light/40"
-            : "hover:text-brand-dark dark:hover:text-brand-light-400"
-        )}
-      >
-        {children}
-        {isActive && (
-          <span className="absolute inset-x-1 -bottom-px h-px bg-gradient-to-r from-teal-500/0 via-teal-500/40 to-teal-500/0 dark:from-teal-400/0 dark:via-teal-400/40 dark:to-teal-400/0" />
-        )}
-      </Link>
-    </li>
-  );
-}
-
-function DesktopNavigation(props: React.ComponentPropsWithoutRef<"nav">) {
-  return (
-    <nav {...props}>
-      <ul className="flex rounded-full bg-white/90 px-3 text-sm font-medium text-zinc-800 shadow-lg shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10">
-        {navigationItems.map((item) => (
-          <NavItem key={item.href} href={item.href}>
-            {item.label}
-          </NavItem>
-        ))}
-      </ul>
-    </nav>
-  );
-}
-
-function clamp(number: number, a: number, b: number) {
-  let min = Math.min(a, b);
-  let max = Math.max(a, b);
-  return Math.min(Math.max(number, min), max);
-}
-
-function AvatarContainer({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
-  return (
-    <div
-      className={clsx(
-        className,
-        "h-10 w-10 rounded-full bg-white/90 p-0.5 shadow-lg shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/90 dark:ring-white/10"
-      )}
-      {...props}
-    />
-  );
-}
-
-function Avatar({
-  className,
-  ...props
-}: Omit<React.ComponentPropsWithoutRef<typeof Link>, "href">) {
-  return (
-    <Link
-      href="/"
-      aria-label={`${siteName} home`}
-      className={clsx(className, "pointer-events-auto")}
-      {...props}
-    >
-      <Image
-        src={avatarImage}
-        alt="Flick gold hand mark"
-        sizes="2.25rem"
-        className="h-9 w-9 rounded-full bg-zinc-100 object-cover dark:bg-zinc-800"
-        priority
-      />
-    </Link>
   );
 }
 
 export function Header() {
-  let headerRef = useRef<React.ElementRef<"div">>(null);
-  let isInitial = useRef(true);
-
-  useEffect(() => {
-    let upDelay = 64;
-
-    function setProperty(property: string, value: string) {
-      document.documentElement.style.setProperty(property, value);
-    }
-
-    function removeProperty(property: string) {
-      document.documentElement.style.removeProperty(property);
-    }
-
-    function updateHeaderStyles() {
-      if (!headerRef.current) {
-        return;
-      }
-
-      let { top, height } = headerRef.current.getBoundingClientRect();
-      let scrollY = clamp(
-        window.scrollY,
-        0,
-        document.body.scrollHeight - window.innerHeight
-      );
-
-      if (isInitial.current) {
-        setProperty("--header-position", "sticky");
-      }
-
-      if (isInitial.current) {
-        setProperty("--header-height", `${height}px`);
-        setProperty("--header-mb", "0px");
-      } else if (top + height < -upDelay) {
-        let offset = Math.max(height, scrollY - upDelay);
-        setProperty("--header-height", `${offset}px`);
-        setProperty("--header-mb", `${height - offset}px`);
-      } else if (top === 0) {
-        setProperty("--header-height", `${scrollY + height}px`);
-        setProperty("--header-mb", `${-scrollY}px`);
-      }
-
-      if (top === 0 && scrollY > 0) {
-        setProperty("--header-inner-position", "fixed");
-        removeProperty("--header-top");
-      } else {
-        removeProperty("--header-inner-position");
-        setProperty("--header-top", "0px");
-      }
-    }
-
-    function updateStyles() {
-      updateHeaderStyles();
-      isInitial.current = false;
-    }
-
-    updateStyles();
-    window.addEventListener("scroll", updateStyles, { passive: true });
-    window.addEventListener("resize", updateStyles);
-
-    return () => {
-      window.removeEventListener("scroll", updateStyles);
-      window.removeEventListener("resize", updateStyles);
-    };
-  }, []);
+  const pathname = usePathname();
+  const isCurrent = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <header
-      className="pointer-events-none relative z-50 flex flex-none flex-col"
-      style={{
-        height: "var(--header-height)",
-        marginBottom: "var(--header-mb)",
-      }}
-    >
-      <div
-        ref={headerRef}
-        className="top-0 z-10 h-16 pt-6"
-        style={{
-          position:
-            "var(--header-position)" as React.CSSProperties["position"],
-        }}
-      >
-        <Container
-          className="top-[var(--header-top,theme(spacing.6))] w-full"
-          style={{
-            position:
-              "var(--header-inner-position)" as React.CSSProperties["position"],
-          }}
-        >
-          <div className="relative flex gap-4">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <AvatarContainer>
-                <Avatar />
-              </AvatarContainer>
-              <Link
-                href="/"
-                className="pointer-events-auto hidden truncate text-sm font-semibold tracking-tight text-zinc-800 outline-offset-4 transition hover:text-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-dark sm:block dark:text-zinc-100 dark:hover:text-brand-light dark:focus-visible:outline-brand-light"
-              >
-                {siteName}
-              </Link>
-            </div>
-            <div className="flex flex-1 justify-end md:justify-center">
-              <MobileNavigation className="pointer-events-auto md:hidden" />
-              <DesktopNavigation className="pointer-events-auto hidden md:block" />
-            </div>
-            <div className="flex justify-end md:flex-1" />
-          </div>
-        </Container>
-      </div>
+    <header className="relative z-50 flex-none">
+      <Container>
+        <div className="flex items-center justify-between gap-6 border-b border-zinc-200 py-6 dark:border-zinc-700/60">
+          <Link href="/" aria-label={`${siteName} home`} className="flex min-w-0 items-center gap-3 rounded-sm text-sm font-semibold text-zinc-900 outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-dark dark:text-zinc-100 dark:focus-visible:outline-brand-light">
+            <Image src={avatarImage} alt="" sizes="2.25rem" className="h-9 w-9 flex-none rounded-full" priority />
+            <span>{siteName}</span>
+          </Link>
+          <nav aria-label="Primary" className="hidden md:block">
+            <ul className="flex gap-7 text-sm">
+              {navigationItems.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined} className={clsx(
+                    "block py-2 underline-offset-8 outline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-dark dark:focus-visible:outline-brand-light",
+                    isCurrent(item.href)
+                      ? "font-semibold text-brand-dark underline dark:text-brand-light"
+                      : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white"
+                  )}>
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <Popover className="md:hidden">
+            <PopoverButton className="rounded-sm px-2 py-2 text-sm font-medium text-zinc-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-dark dark:text-zinc-100 dark:focus-visible:outline-brand-light">
+              Menu
+            </PopoverButton>
+            <PopoverBackdrop className="fixed inset-0 z-50 bg-zinc-900/40 dark:bg-black/70" />
+            <PopoverPanel focus className="fixed inset-x-4 top-4 z-50 rounded-lg bg-white p-6 shadow-lg ring-1 ring-zinc-900/10 dark:bg-zinc-900 dark:ring-white/15">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{siteName}</span>
+                <PopoverButton aria-label="Close menu" className="rounded-sm p-2 text-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-dark dark:text-zinc-300 dark:focus-visible:outline-brand-light">
+                  <CloseIcon className="h-6 w-6" />
+                </PopoverButton>
+              </div>
+              <nav aria-label="Primary" className="mt-4">
+                <ul className="divide-y divide-zinc-200 dark:divide-zinc-700">
+                  {navigationItems.map((item) => (
+                    <li key={item.href}>
+                      <PopoverButton as={Link} href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined} className={clsx(
+                        "block rounded-sm py-3 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-dark dark:focus-visible:outline-brand-light",
+                        isCurrent(item.href)
+                          ? "font-semibold text-brand-dark underline dark:text-brand-light"
+                          : "text-zinc-700 dark:text-zinc-200"
+                      )}>
+                        {item.label}
+                      </PopoverButton>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            </PopoverPanel>
+          </Popover>
+        </div>
+      </Container>
     </header>
   );
 }

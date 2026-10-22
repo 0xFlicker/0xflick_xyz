@@ -19,33 +19,6 @@ export const metadata: Metadata = createPageMetadata({
   path: "/~/cv",
 });
 
-const capabilities = [
-  [
-    "Production AI systems",
-    "Agent orchestration, tool use, identity, OAuth, MCP, permissions, durable state, replay, and evaluation artifacts.",
-  ],
-  [
-    "Platforms + distributed systems",
-    "APIs, event models, service boundaries, reliability, migrations, observability, and cost-aware cloud infrastructure.",
-  ],
-  [
-    "Consumer + monetization",
-    "Advertising, monetization, experimentation, search, content delivery, streaming, payments, and partner surfaces.",
-  ],
-  [
-    "Product engineering",
-    "React, TypeScript, GraphQL, Node.js, frontend architecture, integrations, developer tooling, and cross-functional delivery.",
-  ],
-  [
-    "Infrastructure + operations",
-    "CI/CD, AWS, Google Cloud, Kubernetes, background workers, incident learning, on-call, and production support.",
-  ],
-  [
-    "Web3 systems",
-    "Smart contracts, digital ownership, migrations, protocol tooling, signing flows, and adversarial trust boundaries.",
-  ],
-] as const;
-
 function ExperienceCard({ role, index }: { role: CareerRole; index: number }) {
   const evidence = [...(role.outcomes ?? []), ...(role.responsibilities ?? [])];
 
@@ -101,17 +74,14 @@ function ExperienceCard({ role, index }: { role: CareerRole; index: number }) {
 
 export default function ExperiencePage() {
   return (
-    <Container className="mt-16 sm:mt-28">
+    <Container className="mt-12 sm:mt-20">
       <header className="max-w-4xl border-b border-zinc-200 pb-14 dark:border-zinc-700/60 sm:pb-20">
-        <SectionLabel>Experience</SectionLabel>
         <h1 className="mt-6 text-balance text-5xl font-semibold tracking-[-0.04em] text-zinc-900 sm:text-6xl dark:text-white">
-          25+ years building systems people depend on.
+          Experience.
         </h1>
         <p className="mt-7 max-w-3xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-          I’m John Dean, a Principal Architect at GIPHY. My career runs from
-          developer tools and embedded systems through smartphones, streaming,
-          creative products, cloud infrastructure, MLOps, monetization, and
-          production AI agents.
+          25+ years across developer tools, creative software, games, and AI
+          systems. Currently Principal Architect at GIPHY.
         </p>
         <div className="mt-9 flex flex-wrap gap-4">
           <Button href="/connect">Discuss a role</Button>
@@ -121,22 +91,7 @@ export default function ExperiencePage() {
         </div>
       </header>
 
-      <section className="py-16 sm:py-24" aria-labelledby="chronology-heading">
-        <div className="max-w-3xl">
-          <SectionLabel>Career chronology</SectionLabel>
-          <h2
-            id="chronology-heading"
-            className="mt-4 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white"
-          >
-            Products, ownership, shipped work, and operations.
-          </h2>
-          <p className="mt-5 leading-7 text-zinc-600 dark:text-zinc-300">
-            GIPHY marks the start of the Principal Architect role in 2024. The
-            two Shutterstock tenures remain separate because they were
-            different chapters with different products and responsibilities.
-          </p>
-        </div>
-        <div className="mt-10">
+      <section className="py-8 sm:py-12" aria-label="Career history">
           {publicCareerRoles.map((role, index) => (
             <ExperienceCard
               key={`${role.company}-${role.start}`}
@@ -144,35 +99,6 @@ export default function ExperiencePage() {
               index={index}
             />
           ))}
-        </div>
-      </section>
-
-      <section
-        className="border-t border-zinc-200 py-16 dark:border-zinc-700/60 sm:py-24"
-        aria-labelledby="capabilities-heading"
-      >
-        <SectionLabel>Current technical capabilities</SectionLabel>
-        <h2
-          id="capabilities-heading"
-          className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white"
-        >
-          The technology changes. The operating responsibility does not.
-        </h2>
-        <dl className="mt-10 grid border-y border-zinc-200 dark:border-zinc-700/60 sm:grid-cols-2 lg:grid-cols-3">
-          {capabilities.map(([title, description]) => (
-            <div
-              key={title}
-              className="border-zinc-200 py-7 sm:px-6 sm:[&:nth-child(even)]:border-l lg:border-l lg:[&:nth-child(3n+1)]:border-l-0 lg:[&:nth-child(n+4)]:border-t dark:border-zinc-700/60"
-            >
-              <dt className="font-semibold text-zinc-900 dark:text-zinc-100">
-                {title}
-              </dt>
-              <dd className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                {description}
-              </dd>
-            </div>
-          ))}
-        </dl>
       </section>
 
       <section

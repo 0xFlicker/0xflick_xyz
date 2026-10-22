@@ -12,7 +12,7 @@ Status: implemented editorial direction
 
 ## Positioning
 
-> Principal Architect and hands-on systems engineer turning emerging platforms into production systems.
+> Principal Architect at GIPHY and creator of The House.
 
 The site is designed for Principal Software Engineer, Principal Architect, Principal AI Platform Engineer, Staff+ AI Systems Engineer, Developer Platform Architect, Applied AI / Agent Infrastructure Engineer, and hands-on architecture leadership roles.
 
@@ -51,11 +51,17 @@ Web3 remains a meaningful distributed-systems chapter. It is not the headline or
 - No repeated architecture slogans standing in for facts
 - No generic confidentiality disclaimers or anonymous employers
 
-The three recurring lines retained across the site are:
+The homepage leads with a short introduction, The House, three employer work
+entries, and contact. Keep detailed chronology on Experience and the personal
+career story on About. Work holds project details, games, and open source.
 
-- Turning emerging platforms into production systems.
-- Production is the truth serum.
-- New platforms. Same job.
+Keep the introduction factual and avoid architecture slogans.
+Remove public commentary about editorial rules and
+portfolio construction. Prefer specific contributions over capability lists.
+
+Primary navigation is Work, Experience, About, Connect. The local AI assistant
+remains a secondary footer link. Use plain links, visible current-page states,
+and an accessible mobile menu. New imagery and typography are a later pass.
 
 ## Public-safety rule
 
